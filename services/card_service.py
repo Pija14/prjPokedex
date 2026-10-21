@@ -117,6 +117,35 @@ def list_cards(q: str = "", collection: str = "", rarity: str = "") -> list[Card
     return list(db.session.scalars(query.order_by(Card.created_at.desc(), Card.id.desc())))
 
 
+NO_COLLECTION = "Coleção não informada"
+
+
+def _number_key(card: Card) -> tuple:
+    """Ordem do álbum: 001, 002… 160/159 (secretas no fim); prefixos (TG01, SV049) depois dos números; sem número por último."""
+    match = re.match(r"\s*([A-Za-z]*)0*(\d+)", card.card_number or "")
+    if not match:
+        return (2, "", 0, (card.card_number or "").lower(), card.pokemon_name.lower())
+    prefix, digits = match.groups()
+    return (1 if prefix else 0, prefix.upper(), int(digits), (card.card_number or "").lower(), card.pokemon_name.lower())
+
+
+def group_by_collection(cards: list[Card]) -> list[dict]:
+    """Agrupa as cartas por coleção (em ordem alfabética, as sem coleção por último), cada grupo em ordem de número."""
+    groups: dict[str, list[Card]] = {}
+    for card in cards:
+        groups.setdefault((card.collection_name or "").strip(), []).append(card)
+    result = []
+    for name in sorted(groups, key=lambda n: (n == "", n.casefold())):
+        items = sorted(groups[name], key=_number_key)
+        result.append({
+            "name": name or NO_COLLECTION,
+            "cards": items,
+            "count": len(items),
+            "value": sum((c.price for c in items if c.price is not None), Decimal("0")),
+        })
+    return result
+
+
 def get_card(card_id: int) -> Card | None:
     return db.session.get(Card, card_id)
 

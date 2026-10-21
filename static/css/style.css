@@ -283,6 +283,44 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .filters + .result-count { margin-top: var(--space-3); }
 .result-count + .card-grid { margin-top: var(--space-3); }
 
+/* ---------- Coleção: uma prateleira por set, cartas lado a lado ---------- */
+.shelves { display: grid; gap: var(--space-6); }
+.result-count + .shelves { margin-top: var(--space-4); }
+.shelf { min-width: 0; }
+.shelf-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+.shelf-title { min-width: 0; }
+.shelf-title h2 { overflow: hidden; font-size: 20px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.shelf-title h2::before { content: ""; display: inline-block; width: 6px; height: 18px; margin-right: 8px; border-radius: 3px; background: var(--red); vertical-align: -2px; }
+.shelf-meta { margin-top: 2px; padding-left: 14px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.shelf-arrows { display: flex; flex: none; gap: var(--space-2); }
+.shelf-arrows[hidden] { display: none; }
+.shelf-arrow {
+  display: grid; place-items: center; width: 40px; height: 40px; padding: 0;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer;
+  box-shadow: var(--shadow-1); transition: background .2s var(--ease), opacity .2s;
+}
+.shelf-arrow:hover:not(:disabled) { background: var(--bg); }
+.shelf-arrow:disabled { opacity: .35; cursor: default; }
+.shelf-arrow:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+/* Trilho: rola para o lado com o dedo; no celular vai até a borda da tela */
+.shelf-track {
+  display: flex; gap: var(--space-3);
+  margin: 0 calc(var(--space-4) * -1); padding: 6px var(--space-4) var(--space-3);
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding: 0 var(--space-4);
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.shelf-track::-webkit-scrollbar { display: none; }
+.shelf .card-tile { flex: 0 0 clamp(128px, 36vw, 196px); grid-template-columns: 1fr; scroll-snap-align: start; }
+.shelf .card-art .rarity-badge { left: 6px; bottom: 6px; }
+.shelf .card-art .rarity-badge.on-art { display: inline-block; }
+.shelf .card-info .rarity-badge.in-info, .shelf .card-meta { display: none; }
+.shelf .card-info { align-content: start; padding: var(--space-2) var(--space-3) var(--space-3); }
+.shelf .card-name { font-size: 15px; }
+.shelf .card-foot { flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.shelf .card-number { font-size: 12px; }
+.shelf .card-price { padding: 2px 8px; font-size: 13px; }
+.shelf .card-price.is-empty { font-size: 12px; }
+
 /* ---------- Estado vazio ---------- */
 .empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-8) var(--space-5); border: 2px dashed var(--line); border-radius: var(--r-xl); background: rgba(255, 255, 255, .7); text-align: center; color: var(--muted); }
 .empty h3, .empty h1 { color: var(--ink); font-size: 20px; }
@@ -445,6 +483,8 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
 
 @media (min-width: 768px) {
   .page { padding: var(--space-6) var(--space-6) 120px; }
+  .shelf-track { margin: 0 calc(var(--space-6) * -1); padding: 6px var(--space-6) var(--space-3); scroll-padding: 0 var(--space-6); }
+  .shelf .card-tile { flex-basis: 196px; }
   .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
   .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hero-title { font-size: 52px; }
@@ -491,6 +531,8 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
   .sidebar-foot .soon-chip { justify-self: start; }
   .page { margin-left: var(--sidebar-w); width: auto; max-width: none; padding: var(--space-8) clamp(24px, 4vw, 56px) 64px; }
   .has-nav .page { padding-bottom: 64px; }
+  .shelf-track { margin: 0 -8px; padding: 6px 8px var(--space-3); scroll-padding: 0 8px; }
+  .shelf .card-tile { flex-basis: 208px; }
   .is-login .page { margin-left: 0; min-height: 100vh; }
   .page > * { max-width: 1240px; margin-left: auto; margin-right: auto; }
   .toasts { left: calc(50% + var(--sidebar-w) / 2); bottom: 32px; }

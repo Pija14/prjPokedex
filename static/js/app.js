@@ -15,6 +15,37 @@
     }, 4000);
   });
 
+  // ---------- Minha Coleção: prateleiras (uma por coleção), com setas no computador ----------
+  const shelves = [...document.querySelectorAll("[data-shelf]")];
+  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const updateArrows = (shelf) => {
+    const track = shelf.querySelector("[data-shelf-track]");
+    const arrows = shelf.querySelector("[data-shelf-arrows]");
+    const overflow = track.scrollWidth > track.clientWidth + 4;
+    arrows.hidden = !(overflow && canHover.matches); // no celular, rola com o dedo
+    shelf.querySelector("[data-shelf-prev]").disabled = track.scrollLeft <= 4;
+    shelf.querySelector("[data-shelf-next]").disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+  };
+  const updateAllArrows = () => shelves.forEach(updateArrows);
+  shelves.forEach((shelf) => {
+    const track = shelf.querySelector("[data-shelf-track]");
+    const step = (direction) => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: reduce ? "auto" : "smooth" });
+    };
+    shelf.querySelector("[data-shelf-prev]").addEventListener("click", () => step(-1));
+    shelf.querySelector("[data-shelf-next]").addEventListener("click", () => step(1));
+    let ticking = false;
+    track.addEventListener("scroll", () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { updateArrows(shelf); ticking = false; });
+    }, { passive: true });
+  });
+  window.addEventListener("resize", updateAllArrows);
+  canHover.addEventListener?.("change", updateAllArrows);
+  updateAllArrows();
+
   // ---------- Minha Coleção: busca e filtros instantâneos ----------
   const setupFilters = () => {
     const filterForm = document.querySelector("[data-filters]");
@@ -37,6 +68,15 @@
         if (visible) shown += 1;
       });
       if (count) count.textContent = `${shown} de ${total} ${total === 1 ? "card" : "cards"}`;
+      shelves.forEach((shelf) => { // coleção sem nenhuma carta no filtro some da tela
+        const visible = shelf.querySelectorAll(".card-tile:not(.is-hidden)").length;
+        const label = shelf.querySelector("[data-shelf-count]");
+        const all = Number(label.dataset.total);
+        label.textContent = visible === all ? `${all} ${all === 1 ? "card" : "cards"}` : `${visible} de ${all} ${all === 1 ? "card" : "cards"}`;
+        shelf.classList.toggle("is-hidden", visible === 0);
+        shelf.querySelector("[data-shelf-track]").scrollLeft = 0;
+      });
+      updateAllArrows();
       if (emptyFilter) emptyFilter.classList.toggle("is-hidden", shown > 0);
       const params = new URLSearchParams();
       if (filterForm.q.value.trim()) params.set("q", filterForm.q.value.trim());

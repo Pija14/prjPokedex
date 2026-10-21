@@ -34,9 +34,11 @@ def home():
 @pages.get("/cards")
 def collection():
     filters = {k: request.args.get(k, "").strip() for k in ("q", "collection", "rarity")}
+    cards = card_service.list_cards(**filters)
     return render_template(
         "cards.html",
-        cards=card_service.list_cards(**filters),
+        cards=cards,
+        groups=card_service.group_by_collection(cards),
         total=card_service.collection_summary(recent=0)["total_cards"],
         filters=filters,
         options=card_service.filter_options(),

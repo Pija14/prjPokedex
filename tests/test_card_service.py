@@ -69,3 +69,29 @@ def test_form_defaults_aceita_prefill_do_gemini(app):
 ])
 def test_rarity_tier(rarity, tier):
     assert rarity_tier(rarity) == tier
+
+
+def test_agrupa_por_colecao_em_ordem_de_numero(app):
+    with app.app_context():
+        for name, collection, number, price in [
+            ("Pikachu", "Realeza Absoluta", "160/159", "40"), ("Charmander", "Escarlate e Violeta 151", "004/165", "2"),
+            ("Bulbasaur", "Escarlate e Violeta 151", "001/165", None), ("Mew ex", "Escarlate e Violeta 151", "151/165", "10,50"),
+            ("Zekrom", "Realeza Absoluta", "GG69/GG70", None), ("Lucario", "Realeza Absoluta", "079/159", "5"),
+            ("Eevee", None, None, None), ("Charizard ex", "Escarlate e Violeta 151", "199/165", "300"),
+        ]:
+            card_service.create_card({"pokemon_name": name, "collection_name": collection, "card_number": number, "price": price})
+        groups = card_service.group_by_collection(card_service.list_cards())
+    assert [g["name"] for g in groups] == ["Escarlate e Violeta 151", "Realeza Absoluta", "Coleção não informada"]
+    assert [c.pokemon_name for c in groups[0]["cards"]] == ["Bulbasaur", "Charmander", "Mew ex", "Charizard ex"]
+    assert [c.pokemon_name for c in groups[1]["cards"]] == ["Lucario", "Pikachu", "Zekrom"]  # GG depois dos números
+    assert (groups[0]["count"], groups[0]["value"]) == (4, Decimal("312.50"))
+    assert groups[2]["value"] == Decimal("0")
+
+
+def test_pagina_da_colecao_mostra_prateleiras(client, app):
+    with app.app_context():
+        card_service.create_card({"pokemon_name": "Pikachu", "collection_name": "Realeza Absoluta", "card_number": "160/159"})
+        card_service.create_card({"pokemon_name": "Mew", "collection_name": "Escarlate e Violeta 151", "card_number": "151/165"})
+    html = client.get("/cards").get_data(as_text=True)
+    assert html.count('class="shelf"') == 2
+    assert html.index("Escarlate e Violeta 151</h2>") < html.index("Realeza Absoluta</h2>")
