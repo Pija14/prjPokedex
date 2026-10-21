@@ -10,7 +10,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from database import init_db
-from routes import api, auth, pages
+from routes import api, auth, grading, pages
 from services import auth_service, card_service, gemini_service, image_service
 
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
@@ -30,6 +30,7 @@ def create_app(config: type = Config, **overrides) -> Flask:
     app.register_blueprint(auth)
     app.register_blueprint(pages)
     app.register_blueprint(api)
+    app.register_blueprint(grading)
     _register_security(app)
     _register_template_helpers(app)
     _register_error_pages(app)
@@ -114,10 +115,16 @@ def _register_error_pages(app: Flask) -> None:
     def too_large(_error):
         message = f"Imagem grande demais. O limite é {app.config['MAX_IMAGE_MB']} MB."
         if request.path.startswith("/api/"):
-            return {"errors": {"image": message}}, 413
+            return {"errors": {"image": message}, "error": message}, 413
+        if request.endpoint == "grading.grade_submit":
+            card = card_service.get_card(request.view_args["card_id"])
+            if card:
+                return render_template("grade_form.html", card=card, error=message, issues=[], tips=[],
+                                       ai_enabled=gemini_service.is_configured()), 413
         values = card_service.form_defaults()
         return render_template("card_form.html", card=None, values=values, errors={"image": message},
                                rarities=card_service.RARITY_SUGGESTIONS, languages=card_service.LANGUAGES,
+                               grading_companies=card_service.GRADING_COMPANIES,
                                ai_enabled=gemini_service.is_configured()), 413
 
 

@@ -32,17 +32,21 @@ prjPokedex/
 ├── .env.example            # modelo de variáveis de ambiente (copie para .env)
 ├── database/
 │   ├── database.py         # instância do SQLAlchemy e criação automática do banco
-│   └── models.py           # modelo Card (tabela cards)
+│   └── models.py           # Card (tabela cards) e CardGradingEvaluation (avaliações por IA)
 ├── routes/
 │   ├── auth.py             # entrar / sair
 │   ├── pages.py            # páginas HTML (Home, Coleção, Adicionar, Detalhes, Editar, Excluir)
-│   └── cards.py            # API REST JSON (/api/cards)
+│   ├── cards.py            # API REST JSON (/api/cards)
+│   └── grading.py          # avaliação por IA: telas e API (/api/cards/<id>/grade)
 ├── services/
 │   ├── card_service.py     # regras de negócio: validação, preço, busca, filtros, resumo
 │   ├── image_service.py    # upload seguro das imagens
 │   ├── auth_service.py     # login (senha com hash), limite de tentativas, CSRF
-│   └── gemini_service.py   # contrato do reconhecimento por imagem (ainda não implementado)
-├── templates/              # base.html, index.html, cards.html, card_form.html, card_detail.html, partials/, errors/
+│   ├── gemini_service.py   # chamada ao Gemini (modelos de reserva, prazos) e identificação da carta
+│   ├── catalog_service.py  # confere coleção e raridade no catálogo público
+│   ├── translations.py     # raridades e coleções em português
+│   └── card_grader_service.py # avaliação da condição: qualidade da foto, prompt, validação, histórico
+├── templates/              # base, index, cards, card_form, card_detail, grade_form, grade_result, partials/, errors/
 ├── static/
 │   ├── css/style.css       # identidade visual (mobile-first)
 │   ├── js/app.js           # busca/filtro instantâneos, prévia da imagem, confirmação de exclusão
@@ -162,6 +166,36 @@ foto → (app reduz para 1600 px só para a análise) → POST /api/cards/identi
 - Respostas típicas em 3 a 7 segundos. Foto que não é uma carta → mensagem clara, sem preencher nada.
 - A IA lê o que está impresso; edição/variante (ex.: 1ª Edição) só quando o selo aparece na foto. **Sempre confira** antes de salvar.
 
+## Avaliação da condição por IA (estimativa de faixa PSA)
+
+Na página de uma carta, **🔬 Avaliar Card** → foto da **frente** + foto do **verso** → **🤖 Analisar card**.
+
+```text
+frente + verso → (app reduz para 2048 px) → POST /api/cards/<id>/grade
+   → card_grader_service: confere as fotos (tamanho, resolução ≥ 600 px, brilho, foco, reflexo)
+   → Gemini (prompt de inspeção) → valida o JSON → regra conservadora → salva no histórico
+```
+
+- **Resultado:** possível faixa (ex.: *PSA 8–9*), confiança, nota de 1 a 10 para centralização, cantos, bordas e superfície, defeitos (visíveis e possíveis) e justificativa.
+- **Regra conservadora (no servidor):** nota única sem confiança alta vira faixa; o topo da faixa não passa do critério mais fraco + 1; um critério não avaliável reduz a confiança.
+- **Histórico:** cada avaliação fica na tabela `card_grading_evaluations` (com a análise completa em `analysis_json`). As **fotos não são guardadas**: são analisadas em memória e descartadas.
+- **Nota oficial separada:** a nota de uma empresa (🏆 ex.: PSA 10) fica nos campos `grading_company`/`official_grade` do card (Editar → *Nota oficial*). A IA nunca altera esses campos; cada avaliação guarda a nota oficial do momento (`official_grade_at_time`) para comparações futuras.
+
+**Exemplo:**
+
+```text
+POST /api/cards/1/grade   (multipart: front_image, back_image; com login, cabeçalho X-CSRF-Token)
+
+201 {"success": true, "evaluation": {"id": 7, "estimated_range": "8-9", "confidence": "medium",
+     "scores": {"centering": 9.0, "corners": 9.0, "edges": 8.0, "surface": 9.0}, "is_official": false,
+     "url": "/cards/1/grades/7", ...}}
+400 {"success": false, "error": "Para realizar uma avaliação mais confiável, envie fotos da frente e do verso da carta."}
+409 avaliação desta carta já em andamento · 422 foto inadequada (com "issues" e "tips") · 502/503/504 erro da IA
+GET /api/cards/1/grades → nota oficial + histórico
+```
+
+**Limitações:** é uma **estimativa visual**, não uma avaliação oficial da PSA, e não garante a nota de uma submissão. Fotos de celular não mostram tudo: riscos finos, amassados leves e marcas de superfície costumam aparecer só com luz rasante ou lupa; reflexos, sleeves e toploaders escondem defeitos; a centralização é estimada a olho, sem medida exata. Por isso a confiança da superfície costuma ser baixa, e a faixa é sempre conservadora.
+
 ## Funcionalidades futuras
 
 Consulta automática de preço, histórico de preços, dashboard da coleção, wishlist e PWA (instalar no celular).
@@ -177,6 +211,7 @@ Consulta automática de preço, histórico de preços, dashboard da coleção, w
 [x] Detalhes do card
 [x] Integração Gemini
 [x] Reconhecimento automático do card
+[x] Avaliação da condição por IA (estimativa de faixa PSA)
 [ ] Consulta automática de preço
 [ ] Histórico de preços
 [ ] Dashboard da coleção

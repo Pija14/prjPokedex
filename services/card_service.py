@@ -24,6 +24,9 @@ TEXT_FIELDS = {  # campo: tamanho máximo
     "rarity": 60, "language": 40, "price_source": 120,
 }
 MAX_PRICE = Decimal("9999999999.99")
+# Nota OFICIAL (carta já graduada por uma empresa). A estimativa da IA fica em outra tabela.
+GRADING_COMPANIES = ["PSA", "CGC", "Beckett", "TAG", "Outra"]
+_GRADE_RE = re.compile(r"^(10|[1-9](\.5)?)$")
 
 
 class ValidationError(ValueError):
@@ -98,6 +101,19 @@ def clean_card_data(data, partial: bool = False) -> dict:
             clean["price_date"] = parse_date(data.get("price_date"))
         except ValueError as exc:
             errors["price_date"] = str(exc)
+
+    if not partial or "grading_company" in data or "official_grade" in data:
+        company = " ".join(str(data.get("grading_company") or "").split()) or None
+        grade = str(data.get("official_grade") or "").strip().replace(",", ".") or None
+        if company and company not in GRADING_COMPANIES:
+            errors["grading_company"] = "Escolha uma empresa da lista."
+        if grade and not _GRADE_RE.match(grade):
+            errors["official_grade"] = "Use uma nota de 1 a 10 (meio ponto permitido, ex.: 9.5)."
+        elif grade and not company:
+            errors["grading_company"] = "Informe a empresa que deu a nota."
+        elif company and not grade:
+            errors["official_grade"] = "Informe a nota oficial."
+        clean["grading_company"], clean["official_grade"] = company, grade
 
     if errors:
         raise ValidationError(errors)
@@ -229,9 +245,11 @@ def _store_image(image: FileStorage | None) -> str | None:
 def form_defaults(card: Card | None = None, prefill: dict | None = None) -> dict:
     """Valores iniciais do formulário. `prefill` é o ponto onde entrarão os dados
     identificados pelo Gemini (foto → identificação → formulário preenchido → confirmar)."""
-    values = {field: "" for field in TEXT_FIELDS} | {"price": "", "price_date": ""}
+    values = {field: "" for field in TEXT_FIELDS} | {"price": "", "price_date": "", "grading_company": "", "official_grade": ""}
     if card:
         values.update({field: getattr(card, field) or "" for field in TEXT_FIELDS})
+        values["grading_company"] = card.grading_company or ""
+        values["official_grade"] = card.official_grade or ""
         values["price"] = format_price_input(card.price)
         values["price_date"] = card.price_date.isoformat() if card.price_date else ""
     if prefill:

@@ -108,3 +108,14 @@ def test_producao_nao_sobe_sem_senha(tmp_path, monkeypatch):
 
 def test_sem_senha_configurada_app_continua_aberto(client):
     assert client.get("/cards").status_code == 200  # uso local sem login, como antes
+
+
+def test_avaliacao_exige_login_e_csrf(web):
+    assert web.post("/api/cards/1/grade").status_code == 401
+    login(web)
+    r = web.post("/api/cards/1/grade", data={}, content_type="multipart/form-data")  # sem o cabeçalho X-CSRF-Token
+    assert r.status_code in (400, 403)
+    token = csrf_from(web.get("/cards").get_data(as_text=True)) if 'name="csrf_token"' in web.get("/cards").get_data(as_text=True) else \
+        re.search(r'name="csrf-token" content="([^"]+)"', web.get("/cards").get_data(as_text=True)).group(1)
+    r = web.post("/api/cards/999/grade", headers={"X-CSRF-Token": token}, data={}, content_type="multipart/form-data")
+    assert r.status_code == 404  # passou do login e do CSRF

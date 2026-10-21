@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import 'partials/_grading.html' as g %}
 {% block title %}{{ card.pokemon_name }}{% endblock %}
 {% block content %}
 {% set tier = rarity_tier(card.rarity) %}
@@ -33,11 +34,33 @@
       <div><dt>Idioma</dt><dd>{{ card.language or '—' }}</dd></div>
       <div><dt>Fonte do preço</dt><dd>{{ card.price_source or '—' }}</dd></div>
       <div><dt>Data do preço</dt><dd>{{ card.price_date|date_br }}</dd></div>
+      <div><dt>Nota oficial</dt><dd>{{ (card.grading_company ~ ' ' ~ card.official_grade) if card.official_grade else 'Não graduada' }}</dd></div>
       <div><dt>Cadastrado em</dt><dd>{{ card.created_at|date_br }}</dd></div>
       {% if card.updated_at and card.updated_at != card.created_at %}<div><dt>Atualizado em</dt><dd>{{ card.updated_at|date_br }}</dd></div>{% endif %}
     </dl>
 
+    {% set latest = card.evaluations[0] if card.evaluations else none %}
+    {% if card.official_grade or latest %}
+    <div class="grade-compare">
+      {% if card.official_grade %}
+      <div class="grade-box is-official">
+        <span class="grade-box-label">🏆 {{ card.grading_company }} oficial</span>
+        <strong class="grade-box-value">{{ card.official_grade }}</strong>
+        <span class="grade-box-meta">Nota atribuída pela empresa</span>
+      </div>
+      {% endif %}
+      {% if latest %}
+      <a class="grade-box is-estimate" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=latest.id) }}">
+        <span class="grade-box-label">🤖 Estimativa IA</span>
+        <strong class="grade-box-value">{{ g.range_text(latest.estimated_range) }}</strong>
+        <span class="grade-box-meta">Possível faixa PSA · confiança {{ g.confidence_text(latest.confidence)|lower }}</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="detail-actions">
+      <a class="btn btn-grade btn-lg" href="{{ url_for('grading.grade_page', card_id=card.id) }}">🔬 Avaliar Card</a>
       <a class="btn btn-primary" href="{{ url_for('pages.edit_card', card_id=card.id) }}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Editar
       </a>
@@ -51,6 +74,30 @@
     </div>
   </div>
 </article>
+
+<section class="section grade-history" id="historico" aria-labelledby="historyTitle">
+  <div class="section-head">
+    <h2 id="historyTitle">🔬 Histórico de avaliações</h2>
+    {% if card.evaluations %}<span class="hint">{{ card.evaluations|length }} {{ 'avaliação' if card.evaluations|length == 1 else 'avaliações' }}</span>{% endif %}
+  </div>
+  {% if card.evaluations %}
+    <ul class="history-list">
+      {% for e in card.evaluations %}
+      <li>
+        <a class="history-item" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=e.id) }}">
+          <span class="history-date">{{ e.created_at|date_br }}</span>
+          <span class="history-range grade-{{ g.grade_tier(e.estimated_range) }}">Possível faixa PSA {{ g.range_text(e.estimated_range) }}</span>
+          <span class="history-conf conf-{{ e.confidence }}">Confiança: {{ g.confidence_text(e.confidence) }}</span>
+          <svg class="icon history-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-inline">Nenhuma avaliação ainda. Toque em <strong>🔬 Avaliar Card</strong> e envie fotos da frente e do verso para uma estimativa visual da condição.</p>
+  {% endif %}
+  <p class="grade-disclaimer">As avaliações são estimativas visuais por IA, não notas oficiais da PSA.</p>
+</section>
 
 <dialog class="dialog" data-confirm-dialog aria-labelledby="confirmTitle">
   <form method="dialog" class="dialog-body">

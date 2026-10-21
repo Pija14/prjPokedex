@@ -89,6 +89,8 @@ pip install -r requirements.txt
 
 Depois, **Reload** na aba Web. O `.env`, o banco e as fotos não são afetados pelo `git pull` (estão fora do git).
 
+Sempre rode o `pip install -r requirements.txt` depois do `git pull`: versões novas podem trazer bibliotecas novas (a avaliação por IA usa o **Pillow**). Colunas e tabelas novas do banco são criadas sozinhas no primeiro acesso, sem apagar nada.
+
 ## Se algo der errado
 
 - **"Something went wrong" / erro 500:** aba **Web → Log files → Error log**. A mensagem `CardDex em produção sem configuração de segurança` indica que falta rodar `python scripts/set_password.py` (passo 3).

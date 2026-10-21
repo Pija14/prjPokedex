@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% import 'partials/_grading.html' as g %}
+{% block title %}Análise de {{ card.pokemon_name }}{% endblock %}
+{% block content %}
+{% set overall = analysis.overall %}
+<a class="back-link" href="{{ url_for('pages.card_detail', card_id=card.id) }}">
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>{{ card.pokemon_name }}
+</a>
+
+<header class="page-head">
+  <div>
+    <p class="overline">{{ card.pokemon_name }}{% if card.card_number %} · #{{ card.card_number }}{% endif %} · {{ evaluation.created_at|date_br }}</p>
+    <h1>🔬 Análise do Card</h1>
+  </div>
+</header>
+
+<section class="grade-hero grade-{{ g.grade_tier(evaluation.estimated_range) }}" aria-label="Estimativa da IA">
+  <p class="grade-kicker">🤖 Estimativa IA · Avaliação visual por IA</p>
+  <p class="grade-range-label">Possível faixa</p>
+  <p class="grade-range">PSA {{ g.range_text(evaluation.estimated_range) }}</p>
+  <p class="grade-confidence conf-{{ evaluation.confidence }}">Confiança: <strong>{{ g.confidence_text(evaluation.confidence) }}</strong></p>
+  {% if card.official_grade %}
+    <p class="grade-official-note">🏆 Nota oficial registrada: <strong>{{ card.grading_company }} {{ card.official_grade }}</strong> (não é alterada pela IA)</p>
+  {% endif %}
+</section>
+
+<section class="form-panel grade-criteria" aria-labelledby="criteriaTitle">
+  <h2 id="criteriaTitle">Critérios</h2>
+  {% for key, icon, label in [('centering', '🎯', 'Centralização'), ('corners', '🔲', 'Cantos'), ('edges', '📏', 'Bordas'), ('surface', '✨', 'Superfície')] %}
+    {% set item = analysis[key] %}
+    <article class="criterion">
+      <div class="criterion-head">
+        <h3><span aria-hidden="true">{{ icon }}</span> {{ label }}</h3>
+        <strong class="criterion-score">{% if item.score is none %}Não avaliável pela foto{% else %}{{ g.score_text(item.score) }}/10{% endif %}</strong>
+      </div>
+      {% if item.score is not none %}<div class="criterion-bar" aria-hidden="true"><span style="width: {{ (item.score * 10)|round|int }}%"></span></div>{% endif %}
+      {% if item.assessment %}<p>{{ item.assessment }}</p>{% endif %}
+      {% if key == 'centering' %}
+        {% if item.front_lr or item.front_tb or item.back_lr or item.back_tb %}
+          <dl class="criterion-detail">{% for name, value in [('Frente ←→', item.front_lr), ('Frente ↑↓', item.front_tb), ('Verso ←→', item.back_lr), ('Verso ↑↓', item.back_tb)] if value %}<div><dt>{{ name }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+        {% endif %}
+      {% endif %}
+      {% if key == 'corners' and item.corners %}
+        {% set names = {'top_left': 'Superior esquerdo', 'top_right': 'Superior direito', 'bottom_left': 'Inferior esquerdo', 'bottom_right': 'Inferior direito'} %}
+        <dl class="criterion-detail">{% for corner, text in item.corners.items() if text %}<div><dt>{{ names[corner] }}</dt><dd>{{ text }}</dd></div>{% endfor %}</dl>
+      {% endif %}
+      <p class="criterion-conf conf-{{ item.confidence }}">Confiança: {{ g.confidence_text(item.confidence) }}</p>
+    </article>
+  {% endfor %}
+</section>
+
+<section class="form-panel grade-defects" aria-labelledby="defectsTitle">
+  <h2 id="defectsTitle">⚠️ Possíveis defeitos</h2>
+  {% set visible = analysis.defects|selectattr('visible')|list %}
+  {% set possible = analysis.defects|rejectattr('visible')|list %}
+  {% if not analysis.defects %}<p>Nenhum defeito identificado nas fotos.</p>{% endif %}
+  {% for title, group in [('Visíveis nas fotos', visible), ('Possíveis (não confirmados pelas fotos)', possible)] if group %}
+    <h3>{{ title }}</h3>
+    <ul class="defect-list">
+      {% for d in group %}
+        <li class="sev-{{ d.severity }}"><strong>{{ g.DEFECT.get(d.type, 'Outro') }}</strong>{% if d.location %} · {{ d.location|replace('_', ' ') }}{% endif %} · {{ g.SEVERITY.get(d.severity, d.severity) }}{% if d.description %}<br>{{ d.description }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</section>
+
+{% if analysis.summary or analysis.adjustments or analysis.photo_quality.issues %}
+<section class="form-panel grade-summary" aria-labelledby="summaryTitle">
+  <h2 id="summaryTitle">Justificativa</h2>
+  {% if analysis.summary %}<p>{{ analysis.summary }}</p>{% endif %}
+  {% if analysis.photo_quality.issues %}<p class="hint"><strong>Qualidade das fotos:</strong> {{ analysis.photo_quality.issues|join('; ') }}</p>{% endif %}
+  {% for note in analysis.adjustments or [] %}<p class="hint">↘ {{ note }}{% if loop.first and overall.ai_estimated_range and overall.ai_estimated_range != evaluation.estimated_range %} (a IA sugeriu {{ g.range_text(overall.ai_estimated_range) }}){% endif %}</p>{% endfor %}
+</section>
+{% endif %}
+
+<p class="grade-disclaimer">⚠️ Esta análise é uma estimativa visual gerada por inteligência artificial. Ela não representa uma avaliação oficial da PSA e não garante a nota obtida em uma eventual submissão para grading.</p>
+
+<div class="detail-actions grade-actions">
+  <a class="btn btn-primary" href="{{ url_for('grading.grade_page', card_id=card.id) }}">🔬 Avaliar de novo</a>
+  <a class="btn btn-tonal" href="{{ url_for('pages.card_detail', card_id=card.id) }}#historico">Voltar ao card</a>
+  <form method="post" action="{{ url_for('grading.delete_evaluation', card_id=card.id, evaluation_id=evaluation.id) }}" data-confirm="Remover esta avaliação do histórico?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-text" type="submit">Remover do histórico</button>
+  </form>
+</div>
+
+<dialog class="dialog" data-confirm-dialog aria-labelledby="confirmTitle">
+  <form method="dialog" class="dialog-body">
+    <h2 id="confirmTitle">Remover avaliação?</h2>
+    <p data-confirm-text></p>
+    <div class="dialog-actions">
+      <button class="btn btn-text" value="cancel">Cancelar</button>
+      <button class="btn btn-danger" value="ok" data-confirm-ok>Remover</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

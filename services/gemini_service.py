@@ -63,6 +63,10 @@ class NotACardError(GeminiError):
     status = 422
 
 
+class GeminiTimeoutError(GeminiError):
+    status = 504
+
+
 @dataclass
 class CardIdentification:
     """Dados reconhecidos; os nomes batem com os campos de `Card`."""
@@ -108,13 +112,25 @@ def models() -> list[str]:
 
 def identify_card(image: str | Path | bytes, mime_type: str = "image/jpeg") -> CardIdentification:
     """Identifica a carta na imagem (caminho do arquivo ou bytes)."""
+    data = Path(image).read_bytes() if isinstance(image, (str, Path)) else image
+    result, model = generate_json([{"text": PROMPT}, image_part(data, mime_type)])
+    return _parse(result, model)
+
+
+def image_part(data: bytes, mime_type: str) -> dict:
+    return {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(data).decode()}}
+
+
+def generate_json(parts: list[dict], *, thinking: str = "low", deadline_s: float = TOTAL_DEADLINE,
+                  timeout_s: float = TIMEOUT_PER_MODEL) -> tuple[dict, str]:
+    """Envia texto + imagens ao Gemini e devolve (JSON da resposta, modelo que respondeu).
+
+    Tenta os modelos de reserva quando um recusa (cota, sobrecarga) até o prazo total.
+    """
     key = api_key()
     if not key:
-        raise GeminiNotConfiguredError("Reconhecimento indisponível: defina GEMINI_API_KEY no arquivo .env do servidor.")
-    data = Path(image).read_bytes() if isinstance(image, (str, Path)) else image
-    payload_parts = [{"text": PROMPT}, {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(data).decode()}}]
-
-    deadline = time.monotonic() + TOTAL_DEADLINE
+        raise GeminiNotConfiguredError("IA indisponível: defina GEMINI_API_KEY no arquivo .env do servidor.")
+    deadline = time.monotonic() + deadline_s
     response, last_model, timed_out = None, None, False
     for model in models():
         remaining = deadline - time.monotonic()
@@ -122,13 +138,13 @@ def identify_card(image: str | Path | bytes, mime_type: str = "image/jpeg") -> C
             break
         config = {"responseMimeType": "application/json", "temperature": 0.1}
         if model.startswith("gemini-3"):
-            config["thinkingConfig"] = {"thinkingLevel": "low"}  # transcrever não pede raciocínio longo
+            config["thinkingConfig"] = {"thinkingLevel": thinking}
         try:
             response = requests.post(
                 API_URL.format(model=model),
-                json={"contents": [{"parts": payload_parts}], "generationConfig": config},
+                json={"contents": [{"parts": parts}], "generationConfig": config},
                 headers={"x-goog-api-key": key},  # no cabeçalho, não na URL: não aparece em logs
-                timeout=min(TIMEOUT_PER_MODEL, remaining),
+                timeout=min(timeout_s, remaining),
             )
         except requests.Timeout:
             logger.warning("Gemini %s: sem resposta a tempo", model)
@@ -144,11 +160,21 @@ def identify_card(image: str | Path | bytes, mime_type: str = "image/jpeg") -> C
         logger.warning("Gemini %s: HTTP %s, tentando o próximo modelo", model, response.status_code)
 
     if response is None:
-        raise GeminiError("A IA demorou demais para responder. Tente novamente." if timed_out
-                          else "Sem conexão com a IA. Verifique a internet do computador.")
+        if timed_out:
+            raise GeminiTimeoutError("A IA demorou demais para responder. Tente novamente.")
+        raise GeminiError("Sem conexão com a IA. Verifique a internet do computador.")
     if response.status_code >= 400:
         raise GeminiError(_error_message(response))
-    return _parse(response.json(), last_model)
+    try:
+        result = response.json()
+        content = result["candidates"][0]["content"]["parts"]
+        text = next(p["text"] for p in content if p.get("text") and not p.get("thought"))
+        data = json.loads(_strip_fences(text))
+    except (KeyError, IndexError, StopIteration, ValueError, TypeError) as exc:
+        raise GeminiError("A IA respondeu num formato inesperado. Tente novamente.") from exc
+    if not isinstance(data, dict):
+        raise GeminiError("A IA respondeu num formato inesperado. Tente novamente.")
+    return data, last_model
 
 
 def _error_message(response: requests.Response) -> str:
@@ -160,23 +186,15 @@ def _error_message(response: requests.Response) -> str:
     if "api key not valid" in text or "api_key_invalid" in json.dumps(error).lower():
         return "A chave do Gemini (GEMINI_API_KEY) é inválida."
     if response.status_code == 429 or "resource_exhausted" in text:
-        return "Limite diário de uso da IA atingido. Preencha manualmente ou tente mais tarde."
+        return "Limite diário de uso da IA atingido. Tente mais tarde (ou preencha manualmente)."
     if response.status_code in (500, 503):
         return "A IA está sobrecarregada no momento. Tente novamente em instantes."
     if response.status_code == 403:
         return "A chave do Gemini não tem permissão para este modelo."
-    return "Não foi possível reconhecer a carta agora. Tente novamente."
+    return "A IA não conseguiu responder agora. Tente novamente."
 
 
-def _parse(result: dict, model: str | None) -> CardIdentification:
-    try:
-        parts = result["candidates"][0]["content"]["parts"]
-        text = next(p["text"] for p in parts if p.get("text") and not p.get("thought"))
-        data = json.loads(_strip_fences(text))
-    except (KeyError, IndexError, StopIteration, ValueError, TypeError) as exc:
-        raise GeminiError("A IA respondeu num formato inesperado. Tente novamente.") from exc
-    if not isinstance(data, dict):
-        raise GeminiError("A IA respondeu num formato inesperado. Tente novamente.")
+def _parse(data: dict, model: str | None) -> CardIdentification:
     if data.get("is_pokemon_card") is False:
         raise NotACardError(f"Não parece uma carta Pokémon TCG: {_text(data.get('reason'), 160) or 'tente outra foto.'}")
 

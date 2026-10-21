@@ -7,6 +7,26 @@
   const MAX_IMAGE_MB = 8;
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+  // Foto do celular (vários MB) vira JPEG menor só para a análise da IA; a original é a que fica salva.
+  const shrinkImage = async (blob, maxSide, quality) => {
+    try {
+      const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close?.();
+      return await new Promise((resolve) => canvas.toBlob((b) => resolve(b || blob), "image/jpeg", quality));
+    } catch {
+      return blob; // navegador sem suporte: envia a original
+    }
+  };
+  const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || "";
+
   // ---------- Avisos (flash) ----------
   document.querySelectorAll("[data-autohide]").forEach((toast) => {
     setTimeout(() => {
@@ -218,25 +238,6 @@
       markAi(event.target, false);
     }));
 
-    // Foto do celular (vários MB) vira JPEG de até 1600 px só para a análise; a original é a que fica salva.
-    const shrink = async (blob) => {
-      try {
-        const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
-        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(bitmap.width * scale);
-        canvas.height = Math.round(bitmap.height * scale);
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        bitmap.close?.();
-        return await new Promise((resolve) => canvas.toBlob((b) => resolve(b || blob), "image/jpeg", 0.85));
-      } catch {
-        return blob; // navegador sem suporte: envia a original
-      }
-    };
-
     const showExtra = (data) => {
       const extra = { ...(data.extra || {}) };
       const catalogName = data.catalog?.set_name;
@@ -282,7 +283,7 @@
       setStatus("loading", '<span class="ai-spinner" aria-hidden="true"></span> Analisando a carta… isso leva alguns segundos.');
       try {
         const body = new FormData();
-        body.append("image", await shrink(blob), "carta.jpg");
+        body.append("image", await shrinkImage(blob, 1600, 0.85), "carta.jpg");
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || "";
         const response = await fetch(aiPanel.dataset.aiUrl, { method: "POST", body, headers: { "X-CSRF-Token": csrf } });
         if (response.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
@@ -315,6 +316,106 @@
     form.querySelector("[data-remove-image]")?.addEventListener("change", (event) => {
       button.hidden = event.target.checked;
       if (event.target.checked) currentFile = null;
+    });
+  }
+
+  // ---------- Avaliação da condição por IA: frente + verso ----------
+  const gradeForm = document.querySelector("[data-grade-form]");
+  if (gradeForm) {
+    const submit = gradeForm.querySelector("[data-grade-submit]");
+    const missing = gradeForm.querySelector("[data-grade-missing]");
+    const progress = gradeForm.querySelector("[data-grade-progress]");
+    const steps = [...progress.querySelectorAll("[data-grade-step]")];
+    const errorBox = document.querySelector("[data-grade-error]");
+    const files = { front: null, back: null };
+    let busy = false;
+
+    const showError = (message, issues = [], tips = false) => {
+      errorBox.classList.toggle("is-hidden", !message);
+      errorBox.querySelector("[data-grade-error-text]").textContent = message ? `${tips ? "⚠️ " : ""}${message}` : "";
+      const list = errorBox.querySelector("[data-grade-issues]");
+      list.replaceChildren(...issues.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
+      list.classList.toggle("is-hidden", issues.length === 0);
+      errorBox.querySelector("[data-grade-tips]").classList.toggle("is-hidden", !tips);
+      if (message) errorBox.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    gradeForm.querySelectorAll("[data-grade-input]").forEach((input) => {
+      const side = input.dataset.gradeInput;
+      const drop = input.closest("[data-grade-drop]");
+      const preview = drop.querySelector("[data-grade-preview]");
+      const empty = drop.querySelector("[data-grade-empty]");
+      const state = gradeForm.querySelector(`[data-grade-state="${side}"]`);
+      input.addEventListener("change", () => {
+        const file = input.files?.[0] || null;
+        if (preview.src.startsWith("blob:")) URL.revokeObjectURL(preview.src);
+        let problem = "";
+        if (file && !IMAGE_TYPES.includes(file.type)) problem = "Formato não aceito. Envie JPG, PNG ou WEBP.";
+        else if (file && file.size > MAX_IMAGE_MB * 1024 * 1024) problem = `Imagem grande demais. O limite é ${MAX_IMAGE_MB} MB.`;
+        if (problem) input.value = "";
+        files[side] = problem ? null : file;
+        preview.classList.toggle("is-hidden", !files[side]);
+        empty.classList.toggle("is-hidden", Boolean(files[side]));
+        if (files[side]) preview.src = URL.createObjectURL(files[side]);
+        drop.classList.toggle("has-error", Boolean(problem));
+        drop.classList.toggle("is-ready", Boolean(files[side]));
+        state.textContent = problem || (files[side] ? "✓ Foto pronta" : "Nenhuma foto escolhida");
+        if (files.front && files.back) missing.classList.add("is-hidden");
+      });
+    });
+
+    // As etapas avançam com o tempo só para dar retorno visual: a resposta da IA chega de uma vez.
+    let timer = null;
+    const startProgress = () => {
+      progress.classList.remove("is-hidden");
+      steps.forEach((step) => { step.classList.remove("is-done"); step.firstElementChild.textContent = "⏳"; });
+      let i = 0;
+      timer = setInterval(() => {
+        if (i < steps.length - 1) { steps[i].classList.add("is-done"); steps[i].firstElementChild.textContent = "✓"; i += 1; }
+      }, 4000);
+    };
+    const stopProgress = (done) => {
+      clearInterval(timer);
+      if (done) {
+        steps.forEach((step) => { step.classList.add("is-done"); step.firstElementChild.textContent = "✓"; });
+        progress.querySelector(".grade-progress-title").textContent = "✨ Análise concluída!";
+      } else {
+        progress.classList.add("is-hidden");
+      }
+    };
+
+    gradeForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (busy) return; // não deixa enviar duas vezes
+      if (!files.front || !files.back) { missing.classList.remove("is-hidden"); missing.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      busy = true;
+      submit.disabled = true;
+      submit.textContent = "Analisando…";
+      showError("");
+      startProgress();
+      try {
+        const body = new FormData();
+        body.append("front_image", await shrinkImage(files.front, 2048, 0.9), "frente.jpg");
+        body.append("back_image", await shrinkImage(files.back, 2048, 0.9), "verso.jpg");
+        const response = await fetch(gradeForm.dataset.gradeApi, { method: "POST", body, headers: { "X-CSRF-Token": csrfToken() } });
+        if (response.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          stopProgress(false);
+          showError(data.error || "Não foi possível analisar a carta agora.", data.issues || [], Boolean(data.tips));
+        } else {
+          stopProgress(true);
+          submit.textContent = "✨ Análise concluída!";
+          setTimeout(() => { location.href = data.evaluation.url; }, 700);
+          return; // continua bloqueado até abrir o resultado
+        }
+      } catch {
+        stopProgress(false);
+        showError("Não foi possível enviar as fotos. Confira a conexão e escolha as fotos de novo.");
+      }
+      busy = false;
+      submit.disabled = false;
+      submit.textContent = "🤖 Analisar card";
     });
   }
 

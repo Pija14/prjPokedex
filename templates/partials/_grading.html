@@ -1,0 +1,19 @@
+{# Textos da avaliação por IA. Regra: "PSA" só aparece como "Possível faixa"/"Estimativa", nunca como nota oficial. #}
+{% set CONFIDENCE = {'low': 'Baixa', 'medium': 'Média', 'high': 'Alta'} %}
+{% set SEVERITY = {'minor': 'leve', 'moderate': 'moderado', 'major': 'grave'} %}
+{% set DEFECT = {'edge_whitening': 'Whitening na borda', 'corner_damage': 'Dano no canto', 'surface_scratch': 'Risco na superfície',
+                 'dent': 'Amassado', 'print_defect': 'Falha de impressão', 'centering_issue': 'Centralização', 'stain': 'Mancha',
+                 'crease': 'Vinco', 'unknown': 'Outro'} %}
+
+{% macro range_text(value) %}{{ value|replace('-', '–') }}{% endmacro %}
+
+{% macro score_text(value) -%}
+  {%- if value is none -%}—{%- else -%}{{ ('%.1f'|format(value|float)).replace('.0', '').replace('.', ',') }}{%- endif -%}
+{%- endmacro %}
+
+{% macro confidence_text(value) %}{{ CONFIDENCE.get(value, value) }}{% endmacro %}
+
+{% macro grade_tier(value) -%}
+  {%- set top = (value.split('-')|last)|int -%}
+  {{- 'high' if top >= 9 else ('mid' if top >= 7 else 'low') -}}
+{%- endmacro %}

@@ -111,6 +111,26 @@
     </div>
   </section>
 
+  <section class="form-panel">
+    <h2>Nota oficial (carta graduada)</h2>
+    <p class="hint">Só para cartas já graduadas por uma empresa (ex.: PSA). A estimativa da IA fica separada, no histórico de avaliações.</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="grading_company">Empresa</label>
+        <select id="grading_company" name="grading_company"{{ invalid('grading_company') }}>
+          <option value="">Não graduada</option>
+          {% for company in grading_companies %}<option value="{{ company }}"{% if values.grading_company == company %} selected{% endif %}>{{ company }}</option>{% endfor %}
+        </select>
+        {{ field_error('grading_company') }}
+      </div>
+      <div class="field">
+        <label for="official_grade">Nota oficial</label>
+        <input id="official_grade" name="official_grade" value="{{ values.official_grade }}" inputmode="decimal" maxlength="4" autocomplete="off" placeholder="Ex.: 10 ou 9.5"{{ invalid('official_grade') }}>
+        {{ field_error('official_grade') }}
+      </div>
+    </div>
+  </section>
+
   <div class="form-actions">
     <a class="btn btn-text" href="{{ url_for('pages.card_detail', card_id=card.id) if editing else url_for('pages.home') }}">Cancelar</a>
     <button class="btn btn-primary btn-lg" type="submit" data-submit>

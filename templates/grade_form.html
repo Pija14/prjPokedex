@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Avaliar {{ card.pokemon_name }}{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('pages.card_detail', card_id=card.id) }}">
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>{{ card.pokemon_name }}
+</a>
+
+<header class="page-head">
+  <div>
+    <p class="overline">Avaliação visual por IA</p>
+    <h1>🔬 Avaliar Card</h1>
+  </div>
+</header>
+
+{% if not ai_enabled %}
+<div class="ai-banner" role="note">
+  <span class="soon-chip">IA desligada</span>
+  <p><strong>Avaliação indisponível:</strong> defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor.</p>
+</div>
+{% endif %}
+
+<div class="grade-error alert{% if not error %} is-hidden{% endif %}" role="alert" data-grade-error>
+  <p data-grade-error-text>{% if tips %}⚠️ {% endif %}{{ error or '' }}</p>
+  <ul data-grade-issues{% if not issues %} class="is-hidden"{% endif %}>{% for issue in issues %}<li>{{ issue }}</li>{% endfor %}</ul>
+  <div data-grade-tips{% if not tips %} class="is-hidden"{% endif %}>
+    <p>Tente tirar uma nova foto:</p>
+    <ul>{% for tip in tips or ['com boa iluminação;', 'sem reflexos;', 'mostrando a carta inteira;', 'mantendo a câmera paralela à carta.'] %}<li>{{ tip }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<form class="grade-form" method="post" enctype="multipart/form-data" novalidate data-grade-form
+      action="{{ url_for('grading.grade_submit', card_id=card.id) }}" data-grade-api="{{ url_for('grading.api_grade', card_id=card.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grade-photos">
+    {% for side, label in [('front', 'Foto da frente'), ('back', 'Foto do verso')] %}
+    <section class="form-panel grade-photo">
+      <h2>{{ label }}</h2>
+      <label class="dropzone grade-dropzone" data-grade-drop="{{ side }}">
+        <img class="dropzone-preview is-hidden" data-grade-preview alt="Prévia: {{ label|lower }}">
+        <span class="dropzone-empty" data-grade-empty>
+          <svg class="icon icon-xl" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+          <strong>📷 {{ 'Fotografar a frente' if side == 'front' else 'Fotografar o verso' }}</strong>
+          <small>ou escolher uma imagem · até {{ max_image_mb }} MB</small>
+        </span>
+        <input type="file" name="{{ side }}_image" accept="image/jpeg,image/png,image/webp" capture="environment" data-grade-input="{{ side }}">
+      </label>
+      <p class="grade-photo-state" data-grade-state="{{ side }}">Nenhuma foto escolhida</p>
+    </section>
+    {% endfor %}
+  </div>
+
+  <section class="form-panel grade-tips">
+    <h2>Para uma avaliação confiável</h2>
+    <ul>
+      <li>Boa iluminação, de preferência luz natural e indireta.</li>
+      <li>Sem reflexos: tire a carta do sleeve ou do toploader, se puder.</li>
+      <li>A carta inteira na foto, com um pouco de fundo em volta.</li>
+      <li>Câmera paralela à carta, sem inclinar.</li>
+    </ul>
+  </section>
+
+  <p class="grade-missing is-hidden" data-grade-missing role="status">Para realizar uma avaliação mais confiável, envie fotos da frente e do verso da carta.</p>
+
+  <div class="grade-progress is-hidden" data-grade-progress role="status" aria-live="polite">
+    <p class="grade-progress-title"><span class="ai-spinner" aria-hidden="true"></span> 🤖 Analisando sua carta…</p>
+    <p>Verificando:</p>
+    <ul>
+      {% for step in ['Centralização', 'Cantos', 'Bordas', 'Superfície'] %}<li data-grade-step><span aria-hidden="true">⏳</span> {{ step }}</li>{% endfor %}
+    </ul>
+    <p class="hint">Isso pode levar até um minuto.</p>
+  </div>
+
+  <div class="form-actions">
+    <a class="btn btn-text" href="{{ url_for('pages.card_detail', card_id=card.id) }}">Cancelar</a>
+    <button class="btn btn-primary btn-lg" type="submit" data-grade-submit{% if not ai_enabled %} disabled{% endif %}>🤖 Analisar card</button>
+  </div>
+</form>
+
+<p class="grade-disclaimer">⚠️ A análise é uma estimativa visual gerada por inteligência artificial a partir das fotos. Ela não representa uma avaliação oficial da PSA e não garante a nota obtida em uma eventual submissão para grading.</p>
+{% endblock %}

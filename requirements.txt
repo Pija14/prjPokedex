@@ -6,3 +6,5 @@ python-dotenv>=1.0,<2
 requests>=2.31,<3
 # Fusos horários no Windows (datas exibidas no horário de Brasília)
 tzdata>=2024.1
+# Conferência da qualidade das fotos na avaliação por IA (resolução, brilho, foco, reflexo)
+Pillow>=10,<13

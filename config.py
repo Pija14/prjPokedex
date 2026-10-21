@@ -33,7 +33,8 @@ class Config:
     UPLOAD_URL_PREFIX = "images/cards"  # relativo a static/
     ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
     MAX_IMAGE_MB = 8
-    MAX_CONTENT_LENGTH = (MAX_IMAGE_MB + 1) * 1024 * 1024  # margem para os campos do formulário
+    # Até 2 fotos por envio (frente e verso da avaliação) + margem; cada foto continua limitada a MAX_IMAGE_MB.
+    MAX_CONTENT_LENGTH = (2 * MAX_IMAGE_MB + 1) * 1024 * 1024
 
     # Reconhecimento da carta pelo Gemini (services/gemini_service.py).
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
