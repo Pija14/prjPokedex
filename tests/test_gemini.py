@@ -64,7 +64,8 @@ def test_identifica_e_devolve_prefill(client, calls):
     assert r.status_code == 200
     d = r.get_json()
     assert d["prefill"] == {"pokemon_name": "Charizard", "collection_name": "Base Set", "card_number": "4/102",
-                            "rarity": "Holo Rare", "language": "Inglês"}
+                            "rarity": "Rara Holo", "language": "Inglês"}  # raridade em português
+    assert d["collection_source"] == "ia"  # catálogo fora do ar: coleção fica como sugestão da IA
     assert d["confidence"] == 0.95 and d["extra"] == {"hp": "120", "types": ["Fogo"], "illustrator": "Mitsuhiro Arita"}
     assert d["model"] == "modelo-a"
     sent = calls[0]

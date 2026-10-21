@@ -7,11 +7,20 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app  # noqa: E402
+from services import catalog_service  # noqa: E402
 
 # Menores arquivos válidos de cada formato (só a assinatura importa para a validação).
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
 WEBP = b"RIFF\x24\x00\x00\x00WEBPVP8 " + b"\x00" * 64
+
+
+@pytest.fixture(autouse=True)
+def catalog_offline(monkeypatch):
+    """Nenhum teste fala com o catálogo real; os de catálogo trocam `_get` por respostas simuladas."""
+    monkeypatch.setattr(catalog_service, "_get", lambda path, params: None)
+    monkeypatch.setitem(catalog_service._memory, "sets", None)
+    monkeypatch.setitem(catalog_service._memory, "loaded_at", 0.0)
 
 
 @pytest.fixture()
@@ -23,6 +32,7 @@ def app(tmp_path):
         ADMIN_USERNAME="",  # independente do .env local: login testado em test_auth.py
         ADMIN_PASSWORD_HASH="",
         IS_PRODUCTION=False,
+        DATA_DIR=tmp_path,
     )
     yield app
 

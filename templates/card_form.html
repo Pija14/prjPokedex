@@ -48,7 +48,8 @@
         <button type="button" class="btn btn-ai" data-ai-identify{% if not (editing and card.image_path) %} hidden{% endif %}>
           {% include 'partials/_icon_sparkle.html' %}<span data-ai-label>Identificar com IA</span>
         </button>
-        <dl class="ai-extra" data-ai-extra hidden></dl>
+        <p class="ai-extra-title" data-ai-extra-title hidden>Outras informações da carta</p>
+        <dl class="ai-extra" data-ai-extra tabindex="0" aria-label="Outras informações identificadas pela IA" hidden></dl>
       </div>
     {% endif %}
   </section>
@@ -62,7 +63,7 @@
     </div>
     <div class="field">
       <label for="collection_name">Coleção</label>
-      <input id="collection_name" name="collection_name" value="{{ values.collection_name }}" maxlength="120" autocomplete="off" placeholder="Ex.: Base Set"{{ invalid('collection_name') }}>
+      <input id="collection_name" name="collection_name" value="{{ values.collection_name }}" maxlength="120" autocomplete="off" placeholder="Ex.: Realeza Absoluta"{{ invalid('collection_name') }}>
       {{ field_error('collection_name') }}
     </div>
     <div class="field-row">
@@ -80,7 +81,7 @@
     </div>
     <div class="field">
       <label for="rarity">Raridade</label>
-      <input id="rarity" name="rarity" value="{{ values.rarity }}" maxlength="60" list="rarity-options" autocomplete="off" placeholder="Ex.: Holo Rare"{{ invalid('rarity') }}>
+      <input id="rarity" name="rarity" value="{{ values.rarity }}" maxlength="60" list="rarity-options" autocomplete="off" placeholder="Ex.: Rara Holo"{{ invalid('rarity') }}>
       <datalist id="rarity-options">{% for r in rarities %}<option value="{{ r }}">{% endfor %}</datalist>
       {{ field_error('rarity') }}
     </div>

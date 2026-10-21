@@ -1,7 +1,7 @@
 """API REST das cartas (JSON). Toda regra de negócio está em services/card_service.py."""
 from flask import Blueprint, abort, jsonify, request
 
-from services import card_service, gemini_service, image_service
+from services import card_service, catalog_service, gemini_service, image_service
 from services.card_service import ValidationError
 
 api = Blueprint("api_cards", __name__, url_prefix="/api/cards")
@@ -50,6 +50,7 @@ def identify_card():
         identification = gemini_service.identify_card(data, mime_type=mime)
     except gemini_service.GeminiError as exc:
         return jsonify({"error": str(exc)}), exc.status
+    catalog_service.confirm(identification)  # coleção/raridade conferidas no catálogo e em português
     return jsonify(identification.to_dict())
 
 

@@ -144,7 +144,8 @@
   if (aiPanel) {
     const AI_FIELDS = ["pokemon_name", "collection_name", "card_number", "rarity", "language"];
     const EXTRA_LABELS = { hp: "HP", types: "Tipo", stage: "Estágio", edition: "Edição", set_code: "Código do set",
-      regulation_mark: "Regulação", illustrator: "Ilustrador", year: "Ano", card_type: "Tipo de carta", notes: "Observação" };
+      regulation_mark: "Regulação", illustrator: "Ilustrador", year: "Ano", card_type: "Tipo de carta", notes: "Observação",
+      catalog_set: "Coleção (em inglês)" };
     const status = aiPanel.querySelector("[data-ai-status]");
     const button = aiPanel.querySelector("[data-ai-identify]");
     const buttonLabel = aiPanel.querySelector("[data-ai-label]");
@@ -157,12 +158,18 @@
       status.className = `ai-status is-${kind}`;
       status.querySelector("p").innerHTML = html;
     };
-    const markAi = (input, on) => {
+    const markAi = (input, on, chip = "IA") => {
       const fieldBox = input.closest(".field");
       fieldBox?.classList.toggle("is-ai", on);
       const label = fieldBox?.querySelector("label");
-      if (on && label && !label.querySelector(".ai-chip")) label.insertAdjacentHTML("beforeend", ' <span class="ai-chip">IA</span>');
-      if (!on) label?.querySelector(".ai-chip")?.remove();
+      label?.querySelector(".ai-chip")?.remove();
+      if (on && label) label.insertAdjacentHTML("beforeend", ` <span class="ai-chip${chip === "IA" ? "" : " is-catalog"}">${chip}</span>`);
+    };
+    // Coleção e raridade: conferidas no catálogo oficial ou só lidas pela IA.
+    const SOURCE = {
+      catalogo: { chip: "Catálogo", text: "Coleção e raridade confirmadas no catálogo oficial." },
+      codigo: { chip: "Catálogo", text: "Coleção identificada pelo código e número impressos; confira a raridade." },
+      ia: { chip: "IA", text: "<strong>Coleção não confirmada no catálogo</strong>: é uma sugestão da IA, confira." },
     };
     // Na edição, os dados já salvos valem como "digitados": a IA só completa os campos vazios.
     if (!auto) AI_FIELDS.forEach((name) => { const input = form.elements[name]; if (input?.value.trim()) input.dataset.userEdited = "1"; });
@@ -191,14 +198,20 @@
     };
 
     const showExtra = (data) => {
-      const rows = Object.entries(data.extra || {})
+      const extra = { ...(data.extra || {}) };
+      const catalogName = data.catalog?.set_name;
+      if (catalogName && catalogName !== data.collection_name) extra.catalog_set = catalogName;
+      const rows = Object.entries(extra)
         .filter(([key]) => EXTRA_LABELS[key])
         .map(([key, value]) => `<div><dt>${EXTRA_LABELS[key]}</dt><dd>${escapeHtml(Array.isArray(value) ? value.join(", ") : value)}</dd></div>`);
       extraBox.innerHTML = rows.join("");
       extraBox.hidden = rows.length === 0;
+      extraBox.scrollTop = 0;
+      const title = aiPanel.querySelector("[data-ai-extra-title]");
+      if (title) title.hidden = rows.length === 0;
     };
 
-    const fill = (prefill) => {
+    const fill = (prefill, source) => {
       let filled = 0;
       AI_FIELDS.forEach((name) => {
         const input = form.elements[name];
@@ -207,7 +220,8 @@
         if (input.dataset.userEdited && input.value.trim()) return; // não sobrescreve o que a pessoa digitou
         input.value = value;
         input.removeAttribute("aria-invalid");
-        markAi(input, true);
+        const confirmed = (name === "collection_name" || (name === "rarity" && source === "catalogo")) && SOURCE[source]?.chip === "Catálogo";
+        markAi(input, true, confirmed ? "Catálogo" : "IA");
         filled += 1;
       });
       return filled;
@@ -234,13 +248,15 @@
         if (response.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || data.errors?.image || "Não foi possível reconhecer a carta.");
-        const filled = fill(data.prefill || {});
+        const filled = fill(data.prefill || {}, data.collection_source);
         identifiedOnce = true;
         showExtra(data);
         const summary = [data.pokemon_name, data.collection_name, data.card_number && `#${data.card_number}`].filter(Boolean).map(escapeHtml).join(" · ");
         const low = typeof data.confidence === "number" && data.confidence < 0.7;
-        setStatus(low ? "warning" : "success",
-          `<strong>${summary || "Carta identificada"}</strong><br>${filled ? `${filled} ${filled === 1 ? "campo preenchido" : "campos preenchidos"} pela IA.` : "Nenhum campo novo preenchido."} ${low ? "A IA está em dúvida: confira com atenção." : "Confira os dados"} e informe o valor antes de salvar.`);
+        const unconfirmed = data.collection_source !== "catalogo" && data.collection_source !== "codigo";
+        const sourceText = SOURCE[data.collection_source]?.text || "Coleção não identificada: preencha manualmente se souber.";
+        setStatus(low || unconfirmed ? "warning" : "success",
+          `<strong>${summary || "Carta identificada"}</strong><br>${sourceText}<br>${filled ? `${filled} ${filled === 1 ? "campo preenchido" : "campos preenchidos"}.` : "Nenhum campo novo preenchido."} ${low ? "A IA está em dúvida: confira com atenção." : "Confira os dados"} e informe o valor antes de salvar.`);
       } catch (error) {
         setStatus("error", `${escapeHtml(error.message || "Falha ao reconhecer a carta.")}<br>Você pode preencher manualmente.`);
       } finally {

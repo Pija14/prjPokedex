@@ -12,6 +12,7 @@ venv/
 
 # Dados pessoais e gerados em uso (ver README: "Banco de dados e imagens fora do git")
 data/*.db
+data/*.json
 data/*.db-journal
 static/images/cards/*
 !static/images/cards/.gitkeep

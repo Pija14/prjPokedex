@@ -13,9 +13,9 @@ from database.database import db
 from database.models import Card
 from services import image_service
 
-RARITY_SUGGESTIONS = [
-    "Common", "Uncommon", "Rare", "Holo Rare", "Reverse Holo", "Double Rare", "Ultra Rare",
-    "Illustration Rare", "Special Illustration Rare", "Hyper Rare", "Secret Rare", "Promo",
+RARITY_SUGGESTIONS = [  # nomes em português (ver services/translations.py)
+    "Comum", "Incomum", "Rara", "Rara Holo", "Holo Reversa", "Rara Dupla", "Ultra Rara",
+    "Rara Ilustração", "Rara Ilustração Especial", "Hiper Rara", "Rara Secreta", "Promo",
 ]
 LANGUAGES = ["Português", "Inglês", "Japonês", "Espanhol", "Francês", "Alemão", "Italiano", "Coreano", "Chinês"]
 
@@ -218,8 +218,8 @@ def format_price_input(price: Decimal | None) -> str:
 
 
 _TIER_PATTERNS = [  # do mais raro para o mais comum; palavras inteiras
-    ("secret", r"\b(secret|secreta|hyper|gold|dourada)\b|special illustration"),
-    ("ultra", r"\b(ultra|illustration|ilustra\w*|double|ex|gx|v|vmax|vstar|full art)\b"),
+    ("secret", r"\b(secret|secreta|hyper|hiper|gold|dourada|rainbow|arco)\b|special illustration|ilustra\w* especial"),
+    ("ultra", r"\b(ultra|illustration|ilustra\w*|double|dupla|ex|gx|v|vmax|vstar|full art)\b"),
     ("holo", r"\b(holo|holográfica|holografica|promo|brilhante)\b"),
     ("uncommon", r"\b(uncommon|incomum)\b"),
     ("rare", r"\b(rare|rara|raro)\b"),

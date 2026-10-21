@@ -31,7 +31,7 @@ PROMPT = """You identify Pokémon Trading Card Game (TCG) cards from a photo. Re
 {
   "is_pokemon_card": true,
   "pokemon_name": "name exactly as printed on the card, including suffixes like ex, V, VMAX, GX (e.g. \\"Charizard ex\\")",
-  "collection_name": "set/expansion name, in English, as commonly known (e.g. \\"Base Set\\", \\"Scarlet & Violet—151\\"); null if unknown",
+  "collection_name": "set/expansion name in English ONLY if it is printed or you are sure from the set symbol (e.g. \\"Base Set\\", \\"151\\"); null otherwise. It is checked later against the official catalog using card_number and extra.set_code, so never guess",
   "card_number": "collector number as printed (e.g. \\"004/102\\", \\"SV049/SV094\\", \\"TG01/TG30\\"); null if not visible",
   "rarity": "one of: Common, Uncommon, Rare, Holo Rare, Reverse Holo, Double Rare, Ultra Rare, Illustration Rare, Special Illustration Rare, Hyper Rare, Secret Rare, Promo, or null",
   "language": "card language in Brazilian Portuguese (Português, Inglês, Japonês, Espanhol, Francês, Alemão, Italiano, Coreano, Chinês)",
@@ -39,6 +39,7 @@ PROMPT = """You identify Pokémon Trading Card Game (TCG) cards from a photo. Re
   "extra": {"hp": "", "types": [], "stage": "", "set_code": "", "regulation_mark": "", "illustrator": "", "year": "", "card_type": "Pokémon | Treinador | Energia", "edition": "", "notes": ""}
 }
 Rules:
+- The set is identified from what is PRINTED at the bottom of the card: the collector number with the set total (e.g. 006/165) and the set code printed next to it (extra.set_code, e.g. MEW, PAL, SVI, CRZ, BRS; usually 2-4 capital letters). Transcribe both exactly, character by character. Leave extra.set_code "" if no code is printed (older cards show only a set symbol).
 - Read what is printed; do not invent. Use null (or "" inside extra) for anything not visible or uncertain.
 - extra.edition ("1ª Edição", "Shadowless", "Reverse Holo", "Promo"...) ONLY if the stamp or feature is clearly visible in the photo; otherwise "". Never guess editions or variants: they change the card value a lot.
 - extra.types and extra.stage in Brazilian Portuguese (Fogo, Água, Planta, Elétrico, Psíquico, Lutador, Escuridão, Metal, Fada, Dragão, Incolor; Básico, Estágio 1, Estágio 2). extra.notes: at most one short sentence in Brazilian Portuguese, only with useful visible details (e.g. damage, signature, stamp); otherwise "".
@@ -74,10 +75,15 @@ class CardIdentification:
     confidence: float | None = None  # 0–1, para a tela pedir revisão quando baixa
     extra: dict = field(default_factory=dict)  # HP, tipos, ilustrador, código do set...
     model: str | None = None
+    # De onde veio a coleção: "catalogo" (carta conferida), "codigo" (set pelo código/número impresso),
+    # "ia" (só a leitura da IA, sem confirmação) ou None (não identificada).
+    collection_source: str | None = None
+    catalog: dict | None = None  # dados do catálogo oficial (nomes em inglês)
 
     def as_prefill(self) -> dict:
         """Formato aceito por card_service.form_defaults(prefill=...)."""
-        return {k: v for k, v in asdict(self).items() if k not in {"confidence", "extra", "model"} and v}
+        internal = {"confidence", "extra", "model", "collection_source", "catalog"}
+        return {k: v for k, v in asdict(self).items() if k not in internal and v}
 
     def to_dict(self) -> dict:
         return asdict(self) | {"prefill": self.as_prefill()}

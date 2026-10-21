@@ -63,6 +63,9 @@ def test_form_defaults_aceita_prefill_do_gemini(app):
     ("Common", "common"), ("Uncommon", "uncommon"), ("Rare", "rare"), ("Holo Rare", "holo"),
     ("Reverse Holo", "holo"), ("Double Rare", "ultra"), ("Illustration Rare", "ultra"), ("Pokémon ex", "ultra"),
     ("Special Illustration Rare", "secret"), ("Secret Rare", "secret"), ("Hyper Rare", "secret"), ("", "none"), (None, "none"),
+    ("Comum", "common"), ("Incomum", "uncommon"), ("Rara", "rare"), ("Rara Holo", "holo"), ("Holo Reversa", "holo"),
+    ("Rara Dupla", "ultra"), ("Ultra Rara", "ultra"), ("Rara Ilustração", "ultra"), ("Rara Ilustração Especial", "secret"),
+    ("Hiper Rara", "secret"), ("Rara Secreta", "secret"), ("Promo", "holo"),
 ])
 def test_rarity_tier(rarity, tier):
     assert rarity_tier(rarity) == tier
