@@ -22,6 +22,7 @@
 
 <form class="card-form" method="post" enctype="multipart/form-data" novalidate data-card-form
       action="{{ url_for('pages.update_card', card_id=card.id) if editing else url_for('pages.create_card') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <section class="form-panel form-image">
     <h2>Imagem da carta</h2>
     <label class="dropzone{% if errors.get('image') %} has-error{% endif %}" data-dropzone>

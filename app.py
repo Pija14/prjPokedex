@@ -4,13 +4,14 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from database import init_db
-from routes import api, pages
-from services import card_service, gemini_service, image_service
+from routes import api, auth, pages
+from services import auth_service, card_service, gemini_service, image_service
 
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
 
@@ -20,12 +21,56 @@ def create_app(config: type = Config, **overrides) -> Flask:
     app.config.from_object(config)
     app.config.update(overrides)
 
+    _check_production_config(app)
+    if app.config["IS_PRODUCTION"]:
+        # Atrás do proxy HTTPS do PythonAnywhere: IP real do visitante e esquema https.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
     init_db(app)
+    app.register_blueprint(auth)
     app.register_blueprint(pages)
     app.register_blueprint(api)
+    _register_security(app)
     _register_template_helpers(app)
     _register_error_pages(app)
     return app
+
+
+def _check_production_config(app: Flask) -> None:
+    """Em produção o app não sobe aberto: exige senha e SECRET_KEY próprios."""
+    if not app.config["IS_PRODUCTION"]:
+        return
+    missing = []
+    if not (app.config.get("ADMIN_USERNAME") and app.config.get("ADMIN_PASSWORD_HASH")):
+        missing.append("ADMIN_USERNAME/ADMIN_PASSWORD_HASH (rode: python scripts/set_password.py)")
+    if app.config.get("SECRET_KEY") in (None, "", "carddex-dev-local") or len(app.config["SECRET_KEY"]) < 32:
+        missing.append("SECRET_KEY com pelo menos 32 caracteres aleatórios")
+    if missing:
+        raise RuntimeError("CardDex em produção sem configuração de segurança: defina no .env " + "; ".join(missing))
+
+
+PUBLIC_ENDPOINTS = {"auth.login", "auth.login_post", "static"}
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _register_security(app: Flask) -> None:
+    @app.before_request
+    def require_login_and_csrf():
+        if not auth_service.auth_enabled():
+            return None  # sem senha configurada (uso local): app aberto, como antes
+        is_api = request.path.startswith("/api/")
+        if request.endpoint not in PUBLIC_ENDPOINTS and not auth_service.is_logged_in():
+            if is_api:
+                return jsonify({"error": "Faça login para continuar."}), 401
+            return redirect(url_for("auth.login", next=request.full_path.rstrip("?")))
+        if request.method in UNSAFE_METHODS:
+            token = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token")
+            if not auth_service.valid_csrf(token):
+                if is_api:
+                    return jsonify({"error": "Sessão expirada. Recarregue a página."}), 400
+                return render_template("login.html", next="", username="",
+                                       error="Sua sessão expirou. Entre novamente."), 400
+        return None
 
 
 def brl(value) -> str:
@@ -53,6 +98,9 @@ def _register_template_helpers(app: Flask) -> None:
     app.add_template_global(image_service.image_url, "image_url")
     app.add_template_global(card_service.rarity_tier, "rarity_tier")
     app.add_template_global(app.config["MAX_IMAGE_MB"], "max_image_mb")
+    app.add_template_global(auth_service.csrf_token, "csrf_token")
+    app.add_template_global(auth_service.auth_enabled, "auth_enabled")
+    app.add_template_global(auth_service.is_logged_in, "logged_in")
 
 
 def _register_error_pages(app: Flask) -> None:

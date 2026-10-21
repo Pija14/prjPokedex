@@ -229,7 +229,9 @@
       try {
         const body = new FormData();
         body.append("image", await shrink(blob), "carta.jpg");
-        const response = await fetch(aiPanel.dataset.aiUrl, { method: "POST", body });
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || "";
+        const response = await fetch(aiPanel.dataset.aiUrl, { method: "POST", body, headers: { "X-CSRF-Token": csrf } });
+        if (response.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || data.errors?.image || "Não foi possível reconhecer a carta.");
         const filled = fill(data.prefill || {});

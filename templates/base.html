@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#d62839">
   <title>{% block title %}CardDex{% endblock %} · CardDex</title>
   <script>document.documentElement.classList.add("js")</script>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% set nav = [
@@ -16,6 +17,7 @@
     ('pages.new_card', 'Adicionar Card', 'Adicionar', 'add'),
   ] %}
   {% set current = request.endpoint %}
+  {% set show_nav = logged_in() and current not in ('auth.login', 'auth.login_post') %}
 
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
@@ -24,15 +26,24 @@
       {% with size=36, uid='h' %}{% include 'partials/_logo.html' %}{% endwith %}
       <span class="brand-name">Card<span>Dex</span></span>
     </a>
+    {% if show_nav %}
     <nav class="top-nav" aria-label="Principal">
       {% for endpoint, label, short, icon in nav %}
         <a href="{{ url_for(endpoint) }}" class="top-nav-link top-nav-{{ icon }}{% if current == endpoint %} is-active{% endif %}"{% if current == endpoint %} aria-current="page"{% endif %}>
           {% include 'partials/_icon_' ~ icon ~ '.html' %}<span>{{ short }}</span>
         </a>
       {% endfor %}
+      {% if auth_enabled() %}
+        <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="top-nav-link" type="submit" aria-label="Sair"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>Sair</span></button>
+        </form>
+      {% endif %}
     </nav>
+    {% endif %}
   </header>
 
+  {% if show_nav %}
   <aside class="sidebar" aria-label="Menu">
     <a class="brand brand-lg" href="{{ url_for('pages.home') }}" aria-label="CardDex — início">
       {% with size=44, uid='s' %}{% include 'partials/_logo.html' %}{% endwith %}
@@ -50,7 +61,14 @@
       <span class="soon-chip">Novo</span>
       <p>Fotografe a carta: a IA identifica nome, coleção, número e raridade. Consulta de preço: em breve.</p>
     </div>
+    {% if auth_enabled() %}
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="side-nav-link side-logout" type="submit"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>Sair</span></button>
+      </form>
+    {% endif %}
   </aside>
+  {% endif %}
 
   <main id="conteudo" class="page" tabindex="-1">
     {% include 'partials/_flash.html' %}
@@ -58,13 +76,13 @@
   </main>
 
   {% block fab %}
-    {% if current != 'pages.new_card' %}
+    {% if current != 'pages.new_card' and show_nav %}
       <a class="fab" href="{{ url_for('pages.new_card') }}" aria-label="Adicionar card">
         {% include 'partials/_icon_add.html' %}<span>Adicionar</span>
       </a>
     {% endif %}
   {% endblock %}
 
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=3" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=4" defer></script>
 </body>
 </html>

@@ -20,6 +20,9 @@ def app(tmp_path):
         TESTING=True,
         SQLALCHEMY_DATABASE_URI=f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
         UPLOAD_FOLDER=tmp_path / "cards",
+        ADMIN_USERNAME="",  # independente do .env local: login testado em test_auth.py
+        ADMIN_PASSWORD_HASH="",
+        IS_PRODUCTION=False,
     )
     yield app
 

@@ -24,7 +24,8 @@ Hoje a foto já é **reconhecida pelo Gemini** e preenche o formulário; a **con
 
 ```text
 prjPokedex/
-├── app.py                  # cria o app (create_app), registra rotas e sobe o servidor
+├── app.py                  # cria o app (create_app), registra rotas, login/CSRF e sobe o servidor
+├── wsgi.py                 # entrada para servidores de produção (PythonAnywhere)
 ├── config.py               # configuração (caminhos, limites de upload, variáveis de ambiente)
 ├── requirements.txt        # dependências da aplicação
 ├── requirements-dev.txt    # + pytest
@@ -33,11 +34,13 @@ prjPokedex/
 │   ├── database.py         # instância do SQLAlchemy e criação automática do banco
 │   └── models.py           # modelo Card (tabela cards)
 ├── routes/
+│   ├── auth.py             # entrar / sair
 │   ├── pages.py            # páginas HTML (Home, Coleção, Adicionar, Detalhes, Editar, Excluir)
 │   └── cards.py            # API REST JSON (/api/cards)
 ├── services/
 │   ├── card_service.py     # regras de negócio: validação, preço, busca, filtros, resumo
 │   ├── image_service.py    # upload seguro das imagens
+│   ├── auth_service.py     # login (senha com hash), limite de tentativas, CSRF
 │   └── gemini_service.py   # contrato do reconhecimento por imagem (ainda não implementado)
 ├── templates/              # base.html, index.html, cards.html, card_form.html, card_detail.html, partials/, errors/
 ├── static/
@@ -45,7 +48,9 @@ prjPokedex/
 │   ├── js/app.js           # busca/filtro instantâneos, prévia da imagem, confirmação de exclusão
 │   └── images/             # logo.svg e cards/ (uploads das cartas)
 ├── data/                   # carddex.db é criado aqui na primeira execução
-└── tests/                  # testes do serviço e da API
+├── scripts/set_password.py # define usuário e senha no .env
+├── docs/                   # guia de publicação no PythonAnywhere
+└── tests/                  # testes do serviço, da API, da IA e do login
 ```
 
 **Camadas:** as rotas só recebem a requisição e devolvem a resposta; as regras ficam em `services/`; o acesso a dados em `database/`. As páginas HTML e a API REST chamam os **mesmos** serviços — e os próximos (`gemini_service`, `price_service`, `collection_service`) entram na mesma camada.
@@ -85,6 +90,22 @@ O servidor escuta em `0.0.0.0`, então o celular na **mesma rede Wi-Fi** consegu
 3. Se não abrir no Windows, permita o Python no **Firewall do Windows** (redes privadas) quando ele perguntar, ou libere a porta 5000.
 
 Em "Adicionar Card", o campo de imagem abre a **câmera traseira** do celular.
+
+### Login (usuário e senha)
+
+Para exigir login (obrigatório quando publicado na internet):
+
+```bash
+python scripts/set_password.py
+```
+
+O script pede usuário e senha e grava no `.env` só o **hash** da senha (scrypt) e um `SECRET_KEY` aleatório. Reinicie o CardDex. Sem usuário/senha configurados, o uso local continua aberto, como antes. A sessão fica salva no aparelho por 30 dias; o menu tem **Sair**.
+
+Proteções: todas as telas e a API exigem login; formulários e chamadas da API com token CSRF; 5 tentativas erradas bloqueiam o IP por 15 minutos; cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção. Com `APP_ENV=production` o app **não sobe** sem usuário, senha e `SECRET_KEY`, e o modo debug fica sempre desligado.
+
+### Publicar na internet (PythonAnywhere, grátis)
+
+Passo a passo completo em **[docs/deploy-pythonanywhere.md](docs/deploy-pythonanywhere.md)** — o CardDex fica em `https://SEU-USUARIO.pythonanywhere.com`, com HTTPS, acessível pelo celular de qualquer lugar.
 
 ### Testes
 
@@ -165,5 +186,7 @@ Consulta automática de preço, histórico de preços, dashboard da coleção, w
 
 ## Avisos
 
-- O servidor do Flask (`python app.py`) é de **desenvolvimento**, para uso local. Não há autenticação: qualquer pessoa na sua rede Wi-Fi que souber o endereço consegue acessar.
+- `python app.py` usa o servidor de **desenvolvimento** do Flask, para uso local. Publicado, o CardDex roda pelo `wsgi.py` (ver guia do PythonAnywhere).
+- Sem `ADMIN_USERNAME`/`ADMIN_PASSWORD_HASH` no `.env`, não há login: qualquer pessoa na sua rede Wi-Fi que souber o endereço consegue acessar. Para publicar, configure a senha.
+- As imagens das cartas em `/static/images/cards/` têm nomes aleatórios e não exigem login para abrir (o restante, sim).
 - CardDex é um projeto pessoal, sem vínculo com The Pokémon Company, Nintendo, Creatures ou Game Freak. Nenhuma marca, logo ou arte oficial é usada na interface.

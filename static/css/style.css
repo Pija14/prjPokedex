@@ -375,6 +375,23 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
 .dialog-body p { color: var(--ink-2); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 
+
+/* ---------- Login ---------- */
+.is-login .page { display: grid; place-items: center; min-height: calc(100vh - var(--header-h)); }
+.login-card { position: relative; overflow: hidden; width: min(100%, 420px); border-radius: var(--r-xl); background: var(--surface); box-shadow: var(--shadow-3); }
+.login-lid { height: 88px; display: flex; justify-content: flex-end; gap: 8px; padding: 18px 20px; background: linear-gradient(135deg, var(--red) 0%, var(--red-strong) 70%); border-bottom: 6px solid var(--ink); }
+.login-lid span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--red-deep); }
+.login-lid span:nth-child(1) { background: #ff6b6b; }
+.login-lid span:nth-child(2) { background: var(--yellow); }
+.login-lid span:nth-child(3) { background: #4cd07d; animation: blink 2.4s infinite; }
+.login-body { display: grid; gap: var(--space-3); margin-top: -52px; padding: 0 var(--space-6) var(--space-6); text-align: center; }
+.login-body .hero-title { font-size: 36px; }
+.login-form { display: grid; gap: var(--space-4); margin-top: var(--space-3); text-align: left; }
+.login-hint { text-align: center; }
+.logout-form { display: contents; }
+.top-nav .logout-form button { border: 0; background: transparent; cursor: pointer; }
+.side-logout { width: 100%; border: 0; background: transparent; cursor: pointer; font: inherit; }
+
 /* ---------- Animações ---------- */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes holo { to { background-position: 300% 0; } }
@@ -435,6 +452,7 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
   .sidebar-foot { margin-top: auto; display: grid; gap: var(--space-2); padding: var(--space-4); border-radius: var(--r-lg); background: rgba(0, 0, 0, .18); font-size: 13px; }
   .sidebar-foot .soon-chip { justify-self: start; }
   .page { margin-left: var(--sidebar-w); width: auto; max-width: none; padding: var(--space-8) clamp(24px, 4vw, 56px) 64px; }
+  .is-login .page { margin-left: 0; min-height: 100vh; }
   .page > * { max-width: 1240px; margin-left: auto; margin-right: auto; }
   .toasts { left: calc(50% + var(--sidebar-w) / 2); bottom: 32px; }
   .hero { display: grid; }
