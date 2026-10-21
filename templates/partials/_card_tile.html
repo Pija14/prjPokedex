@@ -1,0 +1,23 @@
+{# Card da coleção. data-* alimentam a busca/filtro instantâneos do app.js. #}
+{% set tier = rarity_tier(card.rarity) %}
+<a class="card-tile tier-{{ tier }}" href="{{ url_for('pages.card_detail', card_id=card.id) }}"
+   data-name="{{ card.pokemon_name|lower }}" data-number="{{ (card.card_number or '')|lower }}"
+   data-collection="{{ card.collection_name or '' }}" data-rarity="{{ card.rarity or '' }}">
+  <div class="card-art">
+    {% if card.image_path %}
+      <img src="{{ image_url(card.image_path) }}" alt="Carta {{ card.pokemon_name }}" loading="lazy" width="245" height="342">
+    {% else %}
+      <div class="card-art-empty" aria-hidden="true">{% with size=56, uid='t' ~ card.id %}{% include 'partials/_logo.html' %}{% endwith %}<span>Sem imagem</span></div>
+    {% endif %}
+    {% if card.rarity %}<span class="rarity-badge tier-{{ tier }} on-art">{{ card.rarity }}</span>{% endif %}
+  </div>
+  <div class="card-info">
+    <h3 class="card-name">{{ card.pokemon_name }}</h3>
+    <p class="card-meta">{{ card.collection_name or 'Coleção não informada' }}</p>
+    {% if card.rarity %}<span class="rarity-badge tier-{{ tier }} in-info">{{ card.rarity }}</span>{% endif %}
+    <div class="card-foot">
+      <span class="card-number">{% if card.card_number %}#{{ card.card_number }}{% else %}&nbsp;{% endif %}</span>
+      <span class="card-price{% if card.price is none %} is-empty{% endif %}">{{ card.price|brl if card.price is not none else 'Sem valor' }}</span>
+    </div>
+  </div>
+</a>

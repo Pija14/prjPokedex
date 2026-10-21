@@ -1,0 +1,23 @@
+# Segredos
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Ambientes virtuais
+.venv/
+venv/
+
+# Dados pessoais e gerados em uso (ver README: "Banco de dados e imagens fora do git")
+data/*.db
+data/*.db-journal
+static/images/cards/*
+!static/images/cards/.gitkeep
+
+# Sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

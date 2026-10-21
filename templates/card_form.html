@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% set editing = card is not none %}
+{% block title %}{{ 'Editar ' ~ card.pokemon_name if editing else 'Adicionar Card' }}{% endblock %}
+{% macro field_error(name) %}{% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}{% endmacro %}
+{% macro invalid(name) %}{% if errors.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="overline">{{ 'Editar card' if editing else 'Novo card' }}</p>
+    <h1>{{ card.pokemon_name if editing else 'Adicionar Card' }}</h1>
+  </div>
+</header>
+
+{% if not editing %}
+<div class="ai-banner" role="note">
+  <span class="soon-chip">Em breve</span>
+  <p><strong>Reconhecimento automático:</strong> tire a foto e o CardDex preenche os dados sozinho. Por enquanto, preencha manualmente.</p>
+</div>
+{% endif %}
+
+{% if errors %}<div class="alert" role="alert">Confira os campos destacados.</div>{% endif %}
+
+<form class="card-form" method="post" enctype="multipart/form-data" novalidate data-card-form
+      action="{{ url_for('pages.update_card', card_id=card.id) if editing else url_for('pages.create_card') }}">
+  <section class="form-panel form-image">
+    <h2>Imagem da carta</h2>
+    <label class="dropzone{% if errors.get('image') %} has-error{% endif %}" data-dropzone>
+      <img class="dropzone-preview{% if not (editing and card.image_path) %} is-hidden{% endif %}" data-preview
+           src="{{ image_url(card.image_path) if editing and card.image_path else '' }}" alt="Prévia da carta">
+      <span class="dropzone-empty{% if editing and card.image_path %} is-hidden{% endif %}" data-preview-empty>
+        <svg class="icon icon-xl" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        <strong>Tirar foto ou escolher imagem</strong>
+        <small>JPG, PNG ou WEBP · até {{ max_image_mb }} MB</small>
+      </span>
+      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" capture="environment" data-image-input{{ invalid('image') }}>
+    </label>
+    {{ field_error('image') }}
+    {% if editing and card.image_path %}
+      <label class="check"><input type="checkbox" name="remove_image" value="1" data-remove-image> Remover a imagem atual</label>
+    {% endif %}
+  </section>
+
+  <section class="form-panel">
+    <h2>Dados da carta</h2>
+    <div class="field">
+      <label for="pokemon_name">Nome do Pokémon <span class="req" aria-hidden="true">*</span></label>
+      <input id="pokemon_name" name="pokemon_name" value="{{ values.pokemon_name }}" maxlength="120" required autocomplete="off" placeholder="Ex.: Charizard"{{ invalid('pokemon_name') }}>
+      {{ field_error('pokemon_name') }}
+    </div>
+    <div class="field">
+      <label for="collection_name">Coleção</label>
+      <input id="collection_name" name="collection_name" value="{{ values.collection_name }}" maxlength="120" autocomplete="off" placeholder="Ex.: Base Set"{{ invalid('collection_name') }}>
+      {{ field_error('collection_name') }}
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="card_number">Número</label>
+        <input id="card_number" name="card_number" value="{{ values.card_number }}" maxlength="30" autocomplete="off" placeholder="Ex.: 004/102"{{ invalid('card_number') }}>
+        {{ field_error('card_number') }}
+      </div>
+      <div class="field">
+        <label for="language">Idioma</label>
+        <input id="language" name="language" value="{{ values.language }}" maxlength="40" list="language-options" autocomplete="off" placeholder="Ex.: Português"{{ invalid('language') }}>
+        <datalist id="language-options">{% for l in languages %}<option value="{{ l }}">{% endfor %}</datalist>
+        {{ field_error('language') }}
+      </div>
+    </div>
+    <div class="field">
+      <label for="rarity">Raridade</label>
+      <input id="rarity" name="rarity" value="{{ values.rarity }}" maxlength="60" list="rarity-options" autocomplete="off" placeholder="Ex.: Holo Rare"{{ invalid('rarity') }}>
+      <datalist id="rarity-options">{% for r in rarities %}<option value="{{ r }}">{% endfor %}</datalist>
+      {{ field_error('rarity') }}
+    </div>
+  </section>
+
+  <section class="form-panel">
+    <h2>Valor</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="price">Valor (R$)</label>
+        <div class="money"><span aria-hidden="true">R$</span>
+          <input id="price" name="price" value="{{ values.price }}" inputmode="decimal" autocomplete="off" placeholder="0,00"{{ invalid('price') }}>
+        </div>
+        {{ field_error('price') }}
+      </div>
+      <div class="field">
+        <label for="price_date">Data do valor</label>
+        <input id="price_date" name="price_date" type="date" value="{{ values.price_date }}"{{ invalid('price_date') }}>
+        {{ field_error('price_date') }}
+      </div>
+    </div>
+    <div class="field">
+      <label for="price_source">Fonte do valor</label>
+      <input id="price_source" name="price_source" value="{{ values.price_source }}" maxlength="120" autocomplete="off" placeholder="Ex.: LigaPokémon, TCGPlayer, Cardmarket"{{ invalid('price_source') }}>
+      {{ field_error('price_source') }}
+      <p class="hint">Sem data, o valor é registrado com a data de hoje.</p>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <a class="btn btn-text" href="{{ url_for('pages.card_detail', card_id=card.id) if editing else url_for('pages.home') }}">Cancelar</a>
+    <button class="btn btn-primary btn-lg" type="submit" data-submit>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ 'Salvar alterações' if editing else 'Salvar card' }}
+    </button>
+  </div>
+</form>
+{% endblock %}
+{% block fab %}{% endblock %}

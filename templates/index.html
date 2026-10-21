@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Início{% endblock %}
+{% block body_class %}is-home{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="hero-body">
+    <div class="hero-logo">{% with size=72, uid='hero' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
+    <h1 class="hero-title">CARD<span>DEX</span></h1>
+    <p class="hero-subtitle">Sua coleção Pokémon TCG</p>
+    <p class="hero-text">Cadastre suas cartas, veja quanto sua coleção vale e encontre qualquer carta em segundos.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="{{ url_for('pages.new_card') }}">{% include 'partials/_icon_add.html' %}Adicionar Card</a>
+      <a class="btn btn-secondary btn-lg" href="{{ url_for('pages.collection') }}">{% include 'partials/_icon_collection.html' %}Minha Coleção</a>
+    </div>
+  </div>
+</section>
+
+<section class="stats" aria-label="Resumo da coleção">
+  <div class="stat stat-red"><span class="stat-label">Cards cadastrados</span><strong class="stat-value">{{ summary.total_cards }}</strong></div>
+  <div class="stat stat-yellow"><span class="stat-label">Valor da coleção</span><strong class="stat-value">{{ summary.total_value|brl }}</strong></div>
+  <div class="stat stat-blue"><span class="stat-label">Coleções (sets)</span><strong class="stat-value">{{ summary.collections }}</strong></div>
+</section>
+
+<section class="section" aria-labelledby="recentTitle">
+  <div class="section-head">
+    <h2 id="recentTitle">Adicionados recentemente</h2>
+    {% if summary.total_cards %}<a class="link" href="{{ url_for('pages.collection') }}">Ver todos</a>{% endif %}
+  </div>
+  {% if summary.recent %}
+    <div class="card-grid">
+      {% for card in summary.recent %}{% include 'partials/_card_tile.html' %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <div class="empty-icon">{% with size=64, uid='e' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
+      <h3>Sua CardDex está vazia</h3>
+      <p>Comece cadastrando a primeira carta da sua coleção.</p>
+      <a class="btn btn-primary" href="{{ url_for('pages.new_card') }}">{% include 'partials/_icon_add.html' %}Adicionar o primeiro card</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{{ card.pokemon_name }}{% endblock %}
+{% block content %}
+{% set tier = rarity_tier(card.rarity) %}
+<a class="back-link" href="{{ url_for('pages.collection') }}">
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Minha Coleção
+</a>
+
+<article class="detail tier-{{ tier }}">
+  <div class="detail-art">
+    {% if card.image_path %}
+      <img src="{{ image_url(card.image_path) }}" alt="Carta {{ card.pokemon_name }}" width="490" height="684">
+    {% else %}
+      <div class="card-art-empty is-large" aria-hidden="true">{% with size=96, uid='d' %}{% include 'partials/_logo.html' %}{% endwith %}<span>Sem imagem</span></div>
+    {% endif %}
+  </div>
+
+  <div class="detail-body">
+    <p class="overline">{{ card.collection_name or 'Coleção não informada' }}{% if card.card_number %} · #{{ card.card_number }}{% endif %}</p>
+    <h1 class="detail-name">{{ card.pokemon_name }}</h1>
+    {% if card.rarity %}<span class="rarity-badge tier-{{ tier }} is-static">{{ card.rarity }}</span>{% endif %}
+
+    <div class="price-panel">
+      <span class="price-label">Valor</span>
+      <strong class="price-value">{{ card.price|brl if card.price is not none else 'Sem valor' }}</strong>
+      <span class="price-meta">{% if card.price_source %}{{ card.price_source }}{% else %}Fonte não informada{% endif %}{% if card.price_date %} · {{ card.price_date|date_br }}{% endif %}</span>
+    </div>
+
+    <dl class="info-list">
+      <div><dt>Coleção</dt><dd>{{ card.collection_name or '—' }}</dd></div>
+      <div><dt>Número</dt><dd>{{ card.card_number or '—' }}</dd></div>
+      <div><dt>Raridade</dt><dd>{{ card.rarity or '—' }}</dd></div>
+      <div><dt>Idioma</dt><dd>{{ card.language or '—' }}</dd></div>
+      <div><dt>Fonte do preço</dt><dd>{{ card.price_source or '—' }}</dd></div>
+      <div><dt>Data do preço</dt><dd>{{ card.price_date|date_br }}</dd></div>
+      <div><dt>Cadastrado em</dt><dd>{{ card.created_at|date_br }}</dd></div>
+      {% if card.updated_at and card.updated_at != card.created_at %}<div><dt>Atualizado em</dt><dd>{{ card.updated_at|date_br }}</dd></div>{% endif %}
+    </dl>
+
+    <div class="detail-actions">
+      <a class="btn btn-primary" href="{{ url_for('pages.edit_card', card_id=card.id) }}">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Editar
+      </a>
+      <form method="post" action="{{ url_for('pages.delete_card', card_id=card.id) }}" data-confirm="Excluir {{ card.pokemon_name }} da coleção? Esta ação não pode ser desfeita.">
+        <button class="btn btn-danger" type="submit">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Excluir
+        </button>
+      </form>
+      <a class="btn btn-text" href="{{ url_for('pages.collection') }}">Voltar</a>
+    </div>
+  </div>
+</article>
+
+<dialog class="dialog" data-confirm-dialog aria-labelledby="confirmTitle">
+  <form method="dialog" class="dialog-body">
+    <h2 id="confirmTitle">Excluir card?</h2>
+    <p data-confirm-text></p>
+    <div class="dialog-actions">
+      <button class="btn btn-text" value="cancel">Cancelar</button>
+      <button class="btn btn-danger" value="ok" data-confirm-ok>Excluir</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

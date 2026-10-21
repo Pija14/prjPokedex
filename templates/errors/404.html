@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Não encontrado{% endblock %}
+{% block content %}
+<div class="empty is-page">
+  <div class="empty-icon">{% with size=72, uid='404' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
+  <h1>Card não encontrado</h1>
+  <p>Ele pode ter sido excluído, ou o endereço está incorreto.</p>
+  <a class="btn btn-primary" href="{{ url_for('pages.collection') }}">Ir para Minha Coleção</a>
+</div>
+{% endblock %}
