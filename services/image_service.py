@@ -17,8 +17,30 @@ class ImageError(ValueError):
     """Imagem recusada (formato, conteúdo ou tamanho)."""
 
 
+_MIME_TYPES = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+
+
 def has_file(file: FileStorage | None) -> bool:
     return bool(file and file.filename)
+
+
+def detect_type(data: bytes) -> str | None:
+    """Formato pelo conteúdo (assinatura), não pelo nome. Ex.: 'jpg'."""
+    return next((ext for ext, check in _SIGNATURES.items() if check(data[:16])), None)
+
+
+def read_for_analysis(file: FileStorage) -> tuple[bytes, str]:
+    """Lê a imagem em memória (sem salvar) para enviar ao reconhecimento. Devolve (bytes, mime)."""
+    max_bytes = current_app.config["MAX_IMAGE_MB"] * 1024 * 1024
+    data = file.stream.read(max_bytes + 1)
+    if not data:
+        raise ImageError("Envie a foto da carta.")
+    if len(data) > max_bytes:
+        raise ImageError(f"Imagem grande demais. O limite é {current_app.config['MAX_IMAGE_MB']} MB.")
+    kind = detect_type(data)
+    if kind is None:
+        raise ImageError("O arquivo não é uma imagem válida. Envie JPG, PNG ou WEBP.")
+    return data, _MIME_TYPES[kind]
 
 
 def _extension(filename: str) -> str:

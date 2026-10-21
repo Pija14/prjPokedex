@@ -11,10 +11,10 @@
   </div>
 </header>
 
-{% if not editing %}
+{% if not ai_enabled and not editing %}
 <div class="ai-banner" role="note">
-  <span class="soon-chip">Em breve</span>
-  <p><strong>Reconhecimento automático:</strong> tire a foto e o CardDex preenche os dados sozinho. Por enquanto, preencha manualmente.</p>
+  <span class="soon-chip">IA desligada</span>
+  <p><strong>Reconhecimento automático indisponível:</strong> defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor. Enquanto isso, preencha manualmente.</p>
 </div>
 {% endif %}
 
@@ -37,6 +37,18 @@
     {{ field_error('image') }}
     {% if editing and card.image_path %}
       <label class="check"><input type="checkbox" name="remove_image" value="1" data-remove-image> Remover a imagem atual</label>
+    {% endif %}
+    {% if ai_enabled %}
+      <div class="ai-panel" data-ai-panel data-ai-url="{{ url_for('api_cards.identify_card') }}" data-ai-auto="{{ '0' if editing else '1' }}">
+        <div class="ai-status" data-ai-status role="status" aria-live="polite">
+          <span class="ai-icon" aria-hidden="true">{% include 'partials/_icon_sparkle.html' %}</span>
+          <p>{% if editing %}A IA pode completar os campos vazios a partir da imagem da carta.{% else %}Tire ou escolha a foto: a IA identifica a carta e preenche os dados para você conferir.{% endif %}</p>
+        </div>
+        <button type="button" class="btn btn-ai" data-ai-identify{% if not (editing and card.image_path) %} hidden{% endif %}>
+          {% include 'partials/_icon_sparkle.html' %}<span data-ai-label>Identificar com IA</span>
+        </button>
+        <dl class="ai-extra" data-ai-extra hidden></dl>
+      </div>
     {% endif %}
   </section>
 

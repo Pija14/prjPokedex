@@ -59,15 +59,6 @@ def test_form_defaults_aceita_prefill_do_gemini(app):
     assert (values["pokemon_name"], values["collection_name"], values["card_number"], values["price"]) == ("Mewtwo", "Base Set", "10/102", "")
 
 
-def test_gemini_ainda_nao_implementado(monkeypatch):
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    with pytest.raises(gemini_service.GeminiNotConfiguredError):
-        gemini_service.identify_card("x.jpg")
-    monkeypatch.setenv("GEMINI_API_KEY", "teste")
-    with pytest.raises(NotImplementedError):
-        gemini_service.identify_card("x.jpg")
-
-
 @pytest.mark.parametrize("rarity, tier", [
     ("Common", "common"), ("Uncommon", "uncommon"), ("Rare", "rare"), ("Holo Rare", "holo"),
     ("Reverse Holo", "holo"), ("Double Rare", "ultra"), ("Illustration Rare", "ultra"), ("Pokémon ex", "ultra"),

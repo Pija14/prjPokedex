@@ -2,5 +2,7 @@ Flask>=3.0,<4
 Flask-SQLAlchemy>=3.1,<4
 SQLAlchemy>=2.0,<3
 python-dotenv>=1.0,<2
+# Chamadas HTTP ao Google Gemini (reconhecimento da carta)
+requests>=2.31,<3
 # Fusos horários no Windows (datas exibidas no horário de Brasília)
 tzdata>=2024.1

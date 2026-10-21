@@ -37,7 +37,7 @@ Você atua como designer de produto sênior. O CardDex deve parecer um **aplicat
 - **Formulário:** painéis (Imagem, Dados, Valor), dropzone grande com prévia (abre a câmera no celular), campos 52px com label sempre visível, erro abaixo do campo, barra de ações fixa no rodapé no celular.
 - **Detalhes:** arte grande com moldura na cor do nível de raridade, painel de valor amarelo em destaque, lista de informações, ações Editar / Excluir (com `<dialog>`) / Voltar.
 - **Feedback:** toasts (flash) que somem sozinhos; diálogo de confirmação para exclusão.
-- **Futuro — reconhecimento por foto:** tela de captura → "Analisando a carta…" (progresso) → formulário pré-preenchido com indicação dos campos vindos da IA e da confiança → usuário revisa e confirma. Erro ou indisponibilidade da IA sempre oferecem o cadastro manual.
+- **Reconhecimento por foto (implementado):** painel da IA no formulário — foto → "Analisando a carta…" (spinner) → campos preenchidos com selo **IA**, resumo e detalhes extras; confiança baixa vira aviso amarelo; erro/cota/"não é carta" em vermelho, sempre oferecendo o cadastro manual. Nunca sobrescreve o que a pessoa digitou.
 
 ## Como entregar
 

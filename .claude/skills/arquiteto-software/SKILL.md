@@ -16,7 +16,7 @@ Navegador (celular/desktop na rede local)
 Flask  app.py: create_app() → blueprints  routes/pages.py (HTML)   routes/cards.py (API)
                                                    │                        │
                                                    └──── services/ ─────────┘
-                                   card_service · image_service · gemini_service (stub)
+                                   card_service · image_service · gemini_service (Gemini, com reservas)
                                                    │
                                    database/ (Flask-SQLAlchemy, modelo Card) ──▶ SQLite data/carddex.db
                                    uploads ──▶ static/images/cards/<uuid>.<ext>
@@ -26,6 +26,7 @@ Flask  app.py: create_app() → blueprints  routes/pages.py (HTML)   routes/card
 - **`config.py`:** caminhos, `MAX_CONTENT_LENGTH`, extensões aceitas, `GEMINI_API_KEY` e host/porta via `.env` (python-dotenv). `create_app(**overrides)` permite banco/pasta temporários nos testes.
 - **Banco:** `init_db()` cria `data/` e faz `db.create_all()` no startup (idempotente). Tabela `cards`: textos curtos, `price` **Numeric(12,2)/Decimal**, `price_date` Date, `created_at`/`updated_at` UTC.
 - **Imagens:** validadas por extensão **e** assinatura (magic bytes), limite em MB, nome `uuid4.ext`; caminho relativo a `static/` no banco; arquivo antigo removido ao trocar/excluir.
+- **Reconhecimento (implementado):** `POST /api/cards/identify` lê a foto em memória (`image_service.read_for_analysis`, sem salvar), chama `gemini_service.identify_card` (chave em `GEMINI_API_KEY`, no cabeçalho; vários modelos de reserva porque a cota gratuita é por modelo; raciocínio `low` nos Gemini 3; prazo total ~75 s) e devolve `CardIdentification.to_dict()` com `prefill`. Nada é salvo sem confirmação.
 - **Execução:** `python app.py` (servidor de desenvolvimento do Flask em `0.0.0.0:5000`) — uso local/rede doméstica, sem autenticação.
 
 ## Evolução planejada

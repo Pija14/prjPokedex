@@ -16,12 +16,12 @@ Você é desenvolvedor sênior full-stack leve: Flask/Jinja no servidor e HTML/C
 | `database/` | `db` (Flask-SQLAlchemy), `init_db`, modelo `Card` (`to_dict`) |
 | `services/card_service.py` | validação (`clean_card_data` → `ValidationError.errors`), `parse_price` (BR), consultas (`list_cards`, `filter_options`, `collection_summary`), escrita (`create_card`, `update_card`, `delete_card`), `form_defaults` (inclusive `prefill` do futuro Gemini), `rarity_tier` |
 | `services/image_service.py` | `save_image` (extensão + assinatura + tamanho, nome uuid), `delete_image`, `image_url` |
-| `services/gemini_service.py` | contrato `identify_card(image_path) -> CardIdentification` (ainda não implementado) |
+| `services/gemini_service.py` | `identify_card(imagem) -> CardIdentification` (Gemini, modelos de reserva, erros com mensagem exibível: `GeminiError`, `NotACardError`, `GeminiNotConfiguredError`) |
 | `routes/pages.py` | páginas HTML: POST → redirect → GET, `flash` para feedback; exclusão só por POST |
 | `routes/cards.py` | API REST `/api/cards` (JSON; POST/PUT aceitam JSON ou multipart com `image`) |
 | `templates/` | `base.html` (header mobile, sidebar desktop, FAB, flash), `index.html`, `cards.html`, `card_form.html` (adicionar e editar), `card_detail.html`, `partials/` (`_card_tile`, `_logo`, `_flash`, ícones), `errors/404.html` |
 | `static/css/style.css` | **toda** a estilização (tokens no `:root`) |
-| `static/js/app.js` | melhorias progressivas: busca/filtro instantâneos, prévia e validação da imagem, confirmação de exclusão (`<dialog>`), toasts |
+| `static/js/app.js` | melhorias progressivas: busca/filtro instantâneos, prévia e validação da imagem, **reconhecimento pela IA** (reduz a foto, chama `/api/cards/identify`, preenche só campos não digitados e marca com selo IA), confirmação de exclusão (`<dialog>`), toasts |
 | `tests/` | pytest (`conftest.py` cria app com banco e pasta temporários) |
 
 ## Regras não negociáveis

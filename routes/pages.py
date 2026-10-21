@@ -1,7 +1,7 @@
 """Páginas HTML (Jinja). Formulários funcionam sem JavaScript: POST → redirect → GET."""
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from services import card_service
+from services import card_service, gemini_service
 from services.card_service import LANGUAGES, RARITY_SUGGESTIONS, ValidationError
 
 pages = Blueprint("pages", __name__)
@@ -22,6 +22,7 @@ def _form(card=None, values=None, errors=None, status=200):
         errors=errors or {},
         rarities=RARITY_SUGGESTIONS,
         languages=LANGUAGES,
+        ai_enabled=gemini_service.is_configured(),
     ), status
 
 

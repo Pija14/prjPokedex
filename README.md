@@ -12,7 +12,7 @@ A visão final do produto:
 📷 Foto  →  🤖 Gemini identifica a carta  →  🔎 consulta de preço  →  👤 você confirma  →  💾 salvo no CardDex
 ```
 
-**Nesta primeira etapa** o cadastro é **manual**. A arquitetura já está preparada para o reconhecimento por imagem (ver [Preparado para o Gemini](#preparado-para-o-gemini)).
+Hoje a foto já é **reconhecida pelo Gemini** e preenche o formulário; a **consulta de preço** ainda é manual (ver [Reconhecimento pela foto](#reconhecimento-pela-foto-gemini)).
 
 ## Tecnologias
 
@@ -65,7 +65,8 @@ source .venv/bin/activate       # Linux / macOS
 # 3. Instale as dependências
 pip install -r requirements.txt
 
-# 4. (Opcional) copie as variáveis de ambiente
+# 4. Copie as variáveis de ambiente e coloque sua GEMINI_API_KEY no .env
+#    (sem a chave, o cadastro manual funciona normalmente)
 copy .env.example .env          # Windows
 cp .env.example .env            # Linux / macOS
 
@@ -95,6 +96,7 @@ pytest
 ## Funcionalidades atuais
 
 - **Home** com resumo da coleção (cards cadastrados, valor total, número de coleções e últimos adicionados).
+- **Reconhecimento pela foto (Gemini):** ao escolher a foto em "Adicionar Card", a IA identifica nome, coleção, número, raridade e idioma (e mostra HP, tipo, estágio, edição, ilustrador, código do set e ano). Os campos preenchidos pela IA ficam marcados com **IA**; o que você já digitou não é sobrescrito; você revisa, informa o valor e salva. Na edição, "Identificar com IA" completa só os campos vazios.
 - **Adicionar Card** manual: nome do Pokémon, coleção, número, raridade, idioma, valor, data e fonte do valor, imagem.
 - **Upload de imagem** (JPG, JPEG, PNG, WEBP; até 8 MB): valida a extensão **e o conteúdo** do arquivo; nome gerado (sem colisão); a imagem antiga é apagada ao trocar ou excluir a carta.
 - **Minha Coleção** em cards visuais, com **busca** por nome ou número e **filtros** por coleção e raridade (instantâneos; também funcionam por link, ex.: `/cards?collection=Base%20Set`).
@@ -106,6 +108,7 @@ pytest
   |---|---|---|
   | GET | `/api/cards?q=&collection=&rarity=` | lista (com filtros opcionais) |
   | GET | `/api/cards/<id>` | uma carta |
+  | POST | `/api/cards/identify` | reconhece a carta da foto (`image`, multipart) e devolve os dados — não salva nada |
   | POST | `/api/cards` | cria (JSON ou `multipart/form-data` com `image`) |
   | PUT | `/api/cards/<id>` | altera só os campos enviados (JSON ou multipart; `remove_image=1` remove a imagem) |
   | DELETE | `/api/cards/<id>` | exclui (e apaga a imagem) |
@@ -126,25 +129,21 @@ pytest
 
 > Observação: as tabelas são criadas automaticamente, mas **alterações** futuras de estrutura (novas colunas) vão pedir migração — quando isso acontecer, entra o Alembic.
 
-## Preparado para o Gemini
-
-`services/gemini_service.py` já define o contrato:
-
-```python
-identify_card(image_path) -> CardIdentification   # pokemon_name, collection_name, card_number, rarity, language, confidence, extra
-```
-
-e `CardIdentification.as_prefill()` devolve os dados no formato aceito por `card_service.form_defaults(prefill=...)`, que é quem preenche o formulário. O fluxo da próxima etapa será:
+## Reconhecimento pela foto (Gemini)
 
 ```text
-foto → image_service salva → gemini_service.identify_card → formulário preenchido → você confirma → card_service salva
+foto → (app reduz para 1600 px só para a análise) → POST /api/cards/identify
+     → gemini_service.identify_card → JSON → formulário preenchido → você confirma → card_service salva (com a foto original)
 ```
 
-A chave fica **só no servidor**, na variável `GEMINI_API_KEY` do `.env` (nunca no navegador nem no git).
+- A chave fica **só no servidor**, em `GEMINI_API_KEY` no `.env` (fora do git), e vai no cabeçalho da requisição — nunca na URL nem no navegador. Crie a sua em https://aistudio.google.com/apikey.
+- **Plano gratuito:** cada modelo do Gemini tem um limite diário (cerca de 20 pedidos por modelo). O CardDex tenta vários modelos em sequência (`GEMINI_FALLBACK_MODELS`); quando todos esgotam, avisa e você preenche manualmente.
+- Respostas típicas em 3 a 7 segundos. Foto que não é uma carta → mensagem clara, sem preencher nada.
+- A IA lê o que está impresso; edição/variante (ex.: 1ª Edição) só quando o selo aparece na foto. **Sempre confira** antes de salvar.
 
 ## Funcionalidades futuras
 
-Reconhecimento automático da carta pela foto (Gemini), consulta automática de preço, histórico de preços, dashboard da coleção, wishlist e PWA (instalar no celular).
+Consulta automática de preço, histórico de preços, dashboard da coleção, wishlist e PWA (instalar no celular).
 
 ## Roadmap
 
@@ -155,8 +154,8 @@ Reconhecimento automático da carta pela foto (Gemini), consulta automática de 
 [x] Upload de imagem
 [x] Minha coleção
 [x] Detalhes do card
-[ ] Integração Gemini
-[ ] Reconhecimento automático do card
+[x] Integração Gemini
+[x] Reconhecimento automático do card
 [ ] Consulta automática de preço
 [ ] Histórico de preços
 [ ] Dashboard da coleção

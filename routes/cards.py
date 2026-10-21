@@ -1,7 +1,7 @@
 """API REST das cartas (JSON). Toda regra de negócio está em services/card_service.py."""
 from flask import Blueprint, abort, jsonify, request
 
-from services import card_service, image_service
+from services import card_service, gemini_service, image_service
 from services.card_service import ValidationError
 
 api = Blueprint("api_cards", __name__, url_prefix="/api/cards")
@@ -33,6 +33,24 @@ def list_cards():
         rarity=request.args.get("rarity", ""),
     )
     return jsonify([_card_json(c) for c in cards])
+
+
+@api.post("/identify")
+def identify_card():
+    """Reconhece a carta da foto (campo `image`) e devolve os dados para preencher o formulário.
+    Nada é salvo: a pessoa revisa e confirma antes do cadastro."""
+    file = request.files.get("image")
+    if not image_service.has_file(file):
+        return jsonify({"errors": {"image": "Envie a foto da carta."}}), 400
+    try:
+        data, mime = image_service.read_for_analysis(file)
+    except image_service.ImageError as exc:
+        return jsonify({"errors": {"image": str(exc)}}), 400
+    try:
+        identification = gemini_service.identify_card(data, mime_type=mime)
+    except gemini_service.GeminiError as exc:
+        return jsonify({"error": str(exc)}), exc.status
+    return jsonify(identification.to_dict())
 
 
 @api.get("/<int:card_id>")

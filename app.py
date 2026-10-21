@@ -10,7 +10,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from config import Config
 from database import init_db
 from routes import api, pages
-from services import card_service, image_service
+from services import card_service, gemini_service, image_service
 
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
 
@@ -69,7 +69,8 @@ def _register_error_pages(app: Flask) -> None:
             return {"errors": {"image": message}}, 413
         values = card_service.form_defaults()
         return render_template("card_form.html", card=None, values=values, errors={"image": message},
-                               rarities=card_service.RARITY_SUGGESTIONS, languages=card_service.LANGUAGES), 413
+                               rarities=card_service.RARITY_SUGGESTIONS, languages=card_service.LANGUAGES,
+                               ai_enabled=gemini_service.is_configured()), 413
 
 
 def _lan_address() -> str | None:

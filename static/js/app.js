@@ -123,6 +123,7 @@
       objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
       if (removeImage) removeImage.checked = false;
+      form.dispatchEvent(new CustomEvent("carddex:image-selected", { detail: { file } }));
     });
 
     removeImage?.addEventListener("change", () => {
@@ -135,6 +136,127 @@
     form.addEventListener("submit", () => {
       const button = form.querySelector("[data-submit]");
       if (button) { button.disabled = true; button.lastChild.textContent = " Salvando…"; }
+    });
+  }
+
+  // ---------- Reconhecimento da carta pela IA (Gemini, no servidor) ----------
+  const aiPanel = form?.querySelector("[data-ai-panel]");
+  if (aiPanel) {
+    const AI_FIELDS = ["pokemon_name", "collection_name", "card_number", "rarity", "language"];
+    const EXTRA_LABELS = { hp: "HP", types: "Tipo", stage: "Estágio", edition: "Edição", set_code: "Código do set",
+      regulation_mark: "Regulação", illustrator: "Ilustrador", year: "Ano", card_type: "Tipo de carta", notes: "Observação" };
+    const status = aiPanel.querySelector("[data-ai-status]");
+    const button = aiPanel.querySelector("[data-ai-identify]");
+    const buttonLabel = aiPanel.querySelector("[data-ai-label]");
+    const extraBox = aiPanel.querySelector("[data-ai-extra]");
+    const auto = aiPanel.dataset.aiAuto === "1";
+    let currentFile = null, busy = false, identifiedOnce = false;
+
+    const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const setStatus = (kind, html) => {
+      status.className = `ai-status is-${kind}`;
+      status.querySelector("p").innerHTML = html;
+    };
+    const markAi = (input, on) => {
+      const fieldBox = input.closest(".field");
+      fieldBox?.classList.toggle("is-ai", on);
+      const label = fieldBox?.querySelector("label");
+      if (on && label && !label.querySelector(".ai-chip")) label.insertAdjacentHTML("beforeend", ' <span class="ai-chip">IA</span>');
+      if (!on) label?.querySelector(".ai-chip")?.remove();
+    };
+    // Na edição, os dados já salvos valem como "digitados": a IA só completa os campos vazios.
+    if (!auto) AI_FIELDS.forEach((name) => { const input = form.elements[name]; if (input?.value.trim()) input.dataset.userEdited = "1"; });
+    AI_FIELDS.forEach((name) => form.elements[name]?.addEventListener("input", (event) => {
+      event.target.dataset.userEdited = "1";
+      markAi(event.target, false);
+    }));
+
+    // Foto do celular (vários MB) vira JPEG de até 1600 px só para a análise; a original é a que fica salva.
+    const shrink = async (blob) => {
+      try {
+        const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close?.();
+        return await new Promise((resolve) => canvas.toBlob((b) => resolve(b || blob), "image/jpeg", 0.85));
+      } catch {
+        return blob; // navegador sem suporte: envia a original
+      }
+    };
+
+    const showExtra = (data) => {
+      const rows = Object.entries(data.extra || {})
+        .filter(([key]) => EXTRA_LABELS[key])
+        .map(([key, value]) => `<div><dt>${EXTRA_LABELS[key]}</dt><dd>${escapeHtml(Array.isArray(value) ? value.join(", ") : value)}</dd></div>`);
+      extraBox.innerHTML = rows.join("");
+      extraBox.hidden = rows.length === 0;
+    };
+
+    const fill = (prefill) => {
+      let filled = 0;
+      AI_FIELDS.forEach((name) => {
+        const input = form.elements[name];
+        const value = prefill[name];
+        if (!input || !value) return;
+        if (input.dataset.userEdited && input.value.trim()) return; // não sobrescreve o que a pessoa digitou
+        input.value = value;
+        input.removeAttribute("aria-invalid");
+        markAi(input, true);
+        filled += 1;
+      });
+      return filled;
+    };
+
+    const identify = async () => {
+      let blob = currentFile;
+      if (!blob) {
+        const src = form.querySelector("[data-preview]")?.getAttribute("src");
+        if (!src) { setStatus("error", "Escolha a foto da carta primeiro."); return; }
+        blob = await (await fetch(src)).blob(); // edição: usa a imagem já salva
+      }
+      if (busy) return;
+      busy = true;
+      button.hidden = false;
+      button.disabled = true;
+      buttonLabel.textContent = "Analisando…";
+      setStatus("loading", '<span class="ai-spinner" aria-hidden="true"></span> Analisando a carta… isso leva alguns segundos.');
+      try {
+        const body = new FormData();
+        body.append("image", await shrink(blob), "carta.jpg");
+        const response = await fetch(aiPanel.dataset.aiUrl, { method: "POST", body });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || data.errors?.image || "Não foi possível reconhecer a carta.");
+        const filled = fill(data.prefill || {});
+        identifiedOnce = true;
+        showExtra(data);
+        const summary = [data.pokemon_name, data.collection_name, data.card_number && `#${data.card_number}`].filter(Boolean).map(escapeHtml).join(" · ");
+        const low = typeof data.confidence === "number" && data.confidence < 0.7;
+        setStatus(low ? "warning" : "success",
+          `<strong>${summary || "Carta identificada"}</strong><br>${filled ? `${filled} ${filled === 1 ? "campo preenchido" : "campos preenchidos"} pela IA.` : "Nenhum campo novo preenchido."} ${low ? "A IA está em dúvida: confira com atenção." : "Confira os dados"} e informe o valor antes de salvar.`);
+      } catch (error) {
+        setStatus("error", `${escapeHtml(error.message || "Falha ao reconhecer a carta.")}<br>Você pode preencher manualmente.`);
+      } finally {
+        busy = false;
+        button.disabled = false;
+        buttonLabel.textContent = identifiedOnce ? "Identificar de novo" : "Identificar com IA";
+      }
+    };
+
+    button.addEventListener("click", identify);
+    form.addEventListener("carddex:image-selected", (event) => {
+      currentFile = event.detail.file;
+      button.hidden = false;
+      if (auto && !identifiedOnce) identify();
+    });
+    form.querySelector("[data-remove-image]")?.addEventListener("change", (event) => {
+      button.hidden = event.target.checked;
+      if (event.target.checked) currentFile = null;
     });
   }
 
