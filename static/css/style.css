@@ -72,6 +72,17 @@
   --md-inverse-primary: #9cc1f0;
   --md-scrim: #000000;
   --logo-red: var(--brand-red);
+  /* Barras de navegação: azul Pokémon com item ativo amarelo */
+  --bar-bg: var(--brand-blue);
+  --bar-fg: #ffffff;
+  --bar-fg-muted: rgba(255, 255, 255, .82);
+  /* Cor de cada prateleira (alterna entre as coleções) */
+  --shelf-0: var(--brand-blue);
+  --shelf-1: #e0a800;
+  --shelf-2: var(--brand-red);
+  --shelf-3: #3fa129;
+  --shelf-4: #9141cb;
+  --shelf-5: #ff8000;
   --logo-ink: var(--brand-graphite);
   --logo-white: #ffffff;
 
@@ -181,6 +192,12 @@
     --md-inverse-on-surface: #1f2937;
     --md-inverse-primary: #2f6db8;
     --logo-ink: #f3f4f6;
+    --bar-bg: #1d3557;
+    --shelf-1: #ffcb05;
+    --shelf-2: #ff6b6b;
+    --shelf-3: #6cc04a;
+    --shelf-4: #b67be6;
+    --shelf-5: #ff9a3c;
     --logo-white: #f3f4f6;
     --tier-common: #aab2bf;
     --tier-uncommon: #7fd49d;
@@ -242,9 +259,10 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .top-bar {
   position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
   height: var(--top-bar-h); padding: 0 var(--space-1) 0 var(--space-4);
-  background: var(--md-surface); transition: background var(--dur-medium) var(--ease);
+  background: var(--bar-bg); color: var(--bar-fg); transition: box-shadow var(--dur-medium) var(--ease);
 }
-.top-bar.is-scrolled { background: var(--md-surface-container); }
+.top-bar.is-scrolled { box-shadow: var(--elev-2); }
+.top-bar .icon-btn { color: var(--bar-fg); }
 .brand { display: inline-flex; align-items: center; gap: var(--space-3); text-decoration: none; }
 .brand-name { font: var(--title-large); font-weight: 600; letter-spacing: 0; }
 .logout-form { display: contents; }
@@ -253,7 +271,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .nav-bar {
   position: fixed; inset: auto 0 0 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
   height: calc(var(--nav-bar-h) + env(safe-area-inset-bottom)); padding: 0 var(--space-2) env(safe-area-inset-bottom);
-  background: var(--md-surface-container);
+  background: var(--md-surface-container-lowest); box-shadow: 0 -1px 0 var(--md-outline-variant);
 }
 .nav-item {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1);
@@ -265,7 +283,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
   transition: background var(--dur-medium) var(--ease);
 }
 .nav-item.is-active { color: var(--md-on-surface); font-weight: 700; }
-.nav-item.is-active .nav-indicator { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.nav-item.is-active .nav-indicator { background: var(--md-accent); color: var(--md-on-accent); }
 .nav-item:focus-visible { outline: none; }
 .nav-item:focus-visible .nav-indicator { outline: 3px solid var(--md-tertiary); outline-offset: 2px; }
 .nav-rail { display: none; }
@@ -403,19 +421,32 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .card-name { overflow: hidden; font: var(--title-medium); text-overflow: ellipsis; white-space: nowrap; }
 .card-meta { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--md-on-surface-variant); font: var(--body-small); }
 .card-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-price { font: var(--label-large); font-variant-numeric: tabular-nums; }
-.card-price.is-empty { color: var(--md-on-surface-variant); font: var(--body-small); }
+.card-price { justify-self: start; margin-top: 2px; padding: 2px 10px; border-radius: var(--shape-full); background: var(--md-accent); color: var(--md-on-accent); font: var(--label-large); font-variant-numeric: tabular-nums; }
+.card-price.is-empty { padding: 0; background: none; color: var(--md-on-surface-variant); font: var(--body-small); }
 
 /* ---------- Início ---------- */
+.greeting {
+  position: relative; overflow: hidden; padding: var(--space-6) var(--space-5);
+  border-radius: var(--shape-xl); background: linear-gradient(135deg, var(--brand-blue), #2a5ea3); color: #fff;
+}
+.greeting::after { /* pokébola em marca d'água */
+  content: ""; position: absolute; right: -48px; top: 50%; width: 180px; height: 180px; transform: translateY(-50%);
+  border-radius: 50%; border: 18px solid rgba(255, 255, 255, .12);
+  background: linear-gradient(transparent calc(50% - 9px), rgba(255, 255, 255, .12) calc(50% - 9px) calc(50% + 9px), transparent calc(50% + 9px));
+}
 .greeting h1 { font: var(--headline-medium); }
-.greeting p { margin-top: var(--space-1); color: var(--md-on-surface-variant); font: var(--body-medium); }
-.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: var(--shape-xl); background: var(--md-surface-container-low); overflow: hidden; }
-.stat { display: grid; align-content: center; gap: 2px; min-width: 0; padding: var(--space-4); }
-.stat + .stat { border-left: 1px solid var(--md-outline-variant); }
+.greeting h1 span { color: var(--brand-yellow); }
+.greeting p { margin-top: var(--space-1); max-width: 70%; color: rgba(255, 255, 255, .88); font: var(--body-medium); }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.stat {
+  --c: var(--brand-blue);
+  display: grid; align-content: center; gap: 2px; min-width: 0; padding: var(--space-4);
+  border-radius: var(--shape-lg); background: color-mix(in srgb, var(--c) 16%, var(--md-surface-container-lowest));
+}
+.stat.is-value { --c: var(--brand-yellow); background: color-mix(in srgb, var(--c) 30%, var(--md-surface-container-lowest)); }
+.stat.is-sets { --c: var(--brand-red); }
 .stat-label { color: var(--md-on-surface-variant); font: var(--label-medium); }
-.stat-value { overflow: hidden; font: var(--title-large); font-weight: 500; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
-.stat.is-value { background: var(--md-gold-container); color: var(--md-on-gold-container); }
-.stat.is-value .stat-label { color: inherit; opacity: .8; }
+.stat-value { overflow: hidden; font: var(--title-large); font-weight: 600; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .action-card {
   display: grid; gap: var(--space-3); padding: var(--space-4); border-radius: var(--shape-xl); text-decoration: none;
@@ -424,8 +455,10 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .action-card .action-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--shape-lg); }
 .action-card strong { display: block; font: var(--title-medium); }
 .action-card span { color: var(--md-on-surface-variant); font: var(--body-small); }
+.action-card.is-scan { background: color-mix(in srgb, var(--brand-yellow) 22%, var(--md-surface-container-lowest)); }
 .action-card.is-scan .action-icon { background: var(--md-accent); color: var(--md-on-accent); }
-.action-card.is-add .action-icon { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+.action-card.is-add { background: color-mix(in srgb, var(--brand-blue) 14%, var(--md-surface-container-lowest)); }
+.action-card.is-add .action-icon { background: var(--brand-blue); color: #fff; }
 
 /* ---------- Estado vazio ---------- */
 .empty { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-10) var(--space-4); border-radius: var(--shape-xl); background: var(--md-surface-container-low); text-align: center; }
@@ -458,20 +491,40 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .result-count { color: var(--md-on-surface-variant); font: var(--label-medium); }
 
 /* Prateleiras (uma por coleção) */
-.shelves { display: grid; gap: var(--space-8); }
-.shelf-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
-.shelf-title h2 { font: var(--title-large); }
+.shelves { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); } /* minmax(0): a prateleira rola por dentro em vez de alargar a página */
+.shelf {
+  --shelf: var(--shelf-0);
+  padding: var(--space-4) 0 var(--space-3); border-radius: var(--shape-xl);
+  background: color-mix(in srgb, var(--shelf) 10%, var(--md-surface-container-lowest));
+}
+.shelf-c1 { --shelf: var(--shelf-1); }
+.shelf-c2 { --shelf: var(--shelf-2); }
+.shelf-c3 { --shelf: var(--shelf-3); }
+.shelf-c4 { --shelf: var(--shelf-4); }
+.shelf-c5 { --shelf: var(--shelf-5); }
+.shelf-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 0 var(--space-4); margin-bottom: var(--space-3); }
+.shelf-title { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.shelf-title::before { content: ""; flex: none; width: 6px; height: 40px; border-radius: var(--shape-full); background: var(--shelf); }
+.shelf-title > div { min-width: 0; }
+.shelf-title h2 { overflow: hidden; font: var(--title-large); text-overflow: ellipsis; white-space: nowrap; }
 .shelf-meta { color: var(--md-on-surface-variant); font: var(--body-medium); }
-.shelf-arrows { display: flex; gap: var(--space-1); }
+.shelf-arrows { display: flex; flex: none; gap: var(--space-2); }
 .shelf-arrow {
-  display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--md-outline-variant); border-radius: var(--shape-full);
-  background: transparent; color: var(--md-on-surface-variant); cursor: pointer;
+  display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--shape-full);
+  background: var(--md-surface-container-lowest); color: var(--shelf); box-shadow: var(--elev-1); cursor: pointer;
 }
-.shelf-arrow:disabled { opacity: .38; cursor: default; }
+.shelf-arrow:disabled { box-shadow: none; opacity: .38; cursor: default; }
+/* Carrossel: rolagem horizontal com encaixe; as bordas esmaecem quando há mais cartas para os lados */
 .shelf-track {
-  display: flex; gap: var(--space-2); margin: 0 calc(var(--space-4) * -1); padding: 4px var(--space-4) var(--space-2);
+  display: flex; gap: var(--space-3); padding: 6px var(--space-4) var(--space-3);
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 var(--space-4); scrollbar-width: none;
+  border-bottom: 6px solid color-mix(in srgb, var(--shelf) 45%, transparent); /* a "tábua" da prateleira */
+  --fade-l: 0px; --fade-r: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
 }
+.shelf.has-more-left .shelf-track { --fade-l: 32px; }
+.shelf.has-more-right .shelf-track { --fade-r: 48px; }
 .shelf-track::-webkit-scrollbar { display: none; }
 .shelf .card-tile { flex: 0 0 148px; scroll-snap-align: start; }
 .shelf .card-tile.is-hidden { display: none; }
@@ -780,7 +833,6 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
   .page { padding-left: var(--space-6); padding-right: var(--space-6); }
   .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .field-row { grid-template-columns: 1fr 1fr; }
-  .shelf-track { margin: 0 calc(var(--space-6) * -1); padding-left: var(--space-6); padding-right: var(--space-6); scroll-padding: 0 var(--space-6); }
   .shelf .card-tile { flex-basis: 172px; }
   .form-actions { margin: 0; border-radius: var(--shape-lg); }
   .form-actions .btn-primary, .form-actions .btn-filled { flex: none; }
@@ -796,8 +848,10 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
   .has-nav .toasts { bottom: 24px; }
   .nav-rail {
     position: fixed; inset: 0 auto 0 0; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
-    width: var(--rail-w); padding: var(--space-4) 0 var(--space-6); background: var(--md-surface);
+    width: var(--rail-w); padding: var(--space-4) 0 var(--space-6); background: var(--bar-bg); color: var(--bar-fg);
   }
+  .nav-rail .nav-item { color: var(--bar-fg-muted); }
+  .nav-rail .nav-item.is-active { color: var(--bar-fg); }
   .rail-brand { margin-bottom: var(--space-1); }
   .rail-items { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
   .rail-foot { margin-top: auto; }
@@ -806,7 +860,9 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
   .has-nav .page > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
   .has-nav .page > * + * { margin-top: var(--space-8); }
   .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-6) var(--space-4); }
-  .shelf-track { margin: 0 -6px; padding: 4px 6px var(--space-2); scroll-padding: 0 6px; }
+  .shelf { padding-top: var(--space-5); }
+  .shelf-head, .shelf-track { padding-left: var(--space-6); padding-right: var(--space-6); }
+  .shelf-track { scroll-padding: 0 var(--space-6); }
   .shelf .card-tile { flex-basis: 184px; }
   .card-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; }
   .form-image { grid-row: span 3; position: sticky; top: var(--space-6); }

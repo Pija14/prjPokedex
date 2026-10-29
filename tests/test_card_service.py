@@ -93,5 +93,5 @@ def test_pagina_da_colecao_mostra_prateleiras(client, app):
         card_service.create_card({"pokemon_name": "Pikachu", "collection_name": "Realeza Absoluta", "card_number": "160/159"})
         card_service.create_card({"pokemon_name": "Mew", "collection_name": "Escarlate e Violeta 151", "card_number": "151/165"})
     html = client.get("/cards").get_data(as_text=True)
-    assert html.count('class="shelf"') == 2
+    assert html.count(' data-shelf ') == 2
     assert html.index("Escarlate e Violeta 151</h2>") < html.index("Realeza Absoluta</h2>")

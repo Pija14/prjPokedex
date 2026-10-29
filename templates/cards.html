@@ -42,12 +42,12 @@
 {# Uma "prateleira" por coleção: título e cartas lado a lado, em ordem de número. #}
 <div class="shelves" data-card-grid data-total="{{ total }}">
   {% for group in groups %}
-  <section class="shelf" data-shelf aria-labelledby="shelf-{{ loop.index }}">
+  <section class="shelf shelf-c{{ loop.index0 % 6 }}" data-shelf aria-labelledby="shelf-{{ loop.index }}">
     <header class="shelf-head">
-      <div class="shelf-title">
+      <div class="shelf-title"><div>
         <h2 id="shelf-{{ loop.index }}">{{ group.name }}</h2>
         <p class="shelf-meta"><span data-shelf-count data-total="{{ group.count }}">{{ group.count }} {{ 'card' if group.count == 1 else 'cards' }}</span>{% if group.value %} · {{ group.value|brl }}{% endif %}</p>
-      </div>
+      </div></div>
       <div class="shelf-arrows" data-shelf-arrows hidden>
         <button class="shelf-arrow" type="button" data-shelf-prev aria-label="Ver cartas anteriores de {{ group.name }}">{{ icon('chevron_left') }}</button>
         <button class="shelf-arrow" type="button" data-shelf-next aria-label="Ver próximas cartas de {{ group.name }}">{{ icon('chevron_right') }}</button>

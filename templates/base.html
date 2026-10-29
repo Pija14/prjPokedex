@@ -4,15 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#3d7dca" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1d3557" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}CardDex{% endblock %} · CardDex</title>
   <script>document.documentElement.classList.add("js")</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
   <link rel="preload" href="{{ url_for('static', filename='fonts/roboto-flex-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=21">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=23">
 </head>
 {# Navegação Material 3: barra inferior (celular) ou trilho lateral (a partir de 840 px). "Adicionar" é ação, não destino: vai no FAB. #}
 {% set nav = [
@@ -82,6 +82,6 @@
   {% endif %}
 
   {% include 'partials/_flash.html' %}
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=20" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=21" defer></script>
 </body>
 </html>

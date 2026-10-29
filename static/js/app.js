@@ -51,8 +51,13 @@
     const arrows = shelf.querySelector("[data-shelf-arrows]");
     const overflow = track.scrollWidth > track.clientWidth + 4;
     arrows.hidden = !(overflow && canHover.matches); // no celular, rola com o dedo
-    shelf.querySelector("[data-shelf-prev]").disabled = track.scrollLeft <= 4;
-    shelf.querySelector("[data-shelf-next]").disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    const atStart = track.scrollLeft <= 4;
+    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    shelf.querySelector("[data-shelf-prev]").disabled = atStart;
+    shelf.querySelector("[data-shelf-next]").disabled = atEnd;
+    // Bordas esmaecidas indicam que o carrossel continua para aquele lado
+    shelf.classList.toggle("has-more-left", overflow && !atStart);
+    shelf.classList.toggle("has-more-right", overflow && !atEnd);
   };
   const updateAllArrows = () => shelves.forEach(updateArrows);
   shelves.forEach((shelf) => {

@@ -4,14 +4,14 @@
 {% block body_class %}is-home{% endblock %}
 {% block content %}
 <header class="greeting">
-  <h1>Olá, treinador!</h1>
+  <h1>Olá, <span>treinador</span>!</h1>
   <p>Sua coleção Pokémon TCG em um só lugar.</p>
 </header>
 
 <section class="summary" aria-label="Resumo da coleção">
-  <div class="stat"><span class="stat-label">Cards cadastrados</span><strong class="stat-value">{{ summary.total_cards }}</strong></div>
+  <div class="stat is-cards"><span class="stat-label">Cards cadastrados</span><strong class="stat-value">{{ summary.total_cards }}</strong></div>
   <div class="stat is-value"><span class="stat-label">Valor</span><strong class="stat-value">{{ summary.total_value|brl }}</strong></div>
-  <div class="stat"><span class="stat-label">Coleções</span><strong class="stat-value">{{ summary.collections }}</strong></div>
+  <div class="stat is-sets"><span class="stat-label">Coleções</span><strong class="stat-value">{{ summary.collections }}</strong></div>
 </section>
 
 <nav class="quick-actions" aria-label="Atalhos">
