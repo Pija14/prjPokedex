@@ -48,3 +48,14 @@
 {% macro rarity_icon(tier) -%}
 {{ icon(RARITY_ICON.get(tier, 'circle'), fill=true, cls='rarity-icon tier-' ~ tier) }}
 {%- endmacro %}
+
+{# Etiqueta de tipo (cor funcional). Aceita os nomes das cartas em português (Planta, Escuridão, Metal, Incolor…). #}
+{% set TYPE_KEYS = {'fogo': 'fire', 'água': 'water', 'agua': 'water', 'planta': 'grass', 'grama': 'grass',
+  'elétrico': 'electric', 'eletrico': 'electric', 'raio': 'electric', 'psíquico': 'psychic', 'psiquico': 'psychic',
+  'lutador': 'fighting', 'luta': 'fighting', 'escuridão': 'dark', 'escuridao': 'dark', 'sombrio': 'dark', 'noturno': 'dark',
+  'metal': 'steel', 'aço': 'steel', 'aco': 'steel', 'fada': 'fairy', 'dragão': 'dragon', 'dragao': 'dragon',
+  'incolor': 'normal', 'normal': 'normal', 'veneno': 'poison', 'fantasma': 'ghost', 'terra': 'ground', 'gelo': 'ice',
+  'pedra': 'rock', 'inseto': 'bug', 'voador': 'flying'} %}
+{% macro type_chip(name) -%}
+<span class="chip type-chip type-{{ TYPE_KEYS.get((name or '')|trim|lower, 'normal') }}">{{ name }}</span>
+{%- endmacro %}

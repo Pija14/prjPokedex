@@ -16,7 +16,10 @@ Você atua como designer de produto sênior. O CardDex deve parecer um **aplicat
 ## Identidade visual (Material 3 + universo Pokémon, sem poluir)
 
 - **Princípio:** a interface é neutra para as **cartas** brilharem. Cor de marca só onde orienta: ação principal, item ativo da navegação e valor.
-- **Cores (papéis M3 no `:root` do `style.css`, tema claro e escuro automáticos):** `--md-primary` vermelho Pokédex (ação principal, FAB, scan), `--md-tertiary` azul Pokémon (IA, foco, informação), `--md-gold-container` amarelo Pikachu **só para valor/preço**. Superfícies neutras `--md-surface*`. Nunca cores soltas fora dos tokens.
+- **Cores — paleta Pokémon em três camadas (tokens no `:root` do `style.css`, tema claro e escuro automáticos):**
+  1. *Identidade:* amarelo `#FFCB05` = destaque (`--md-accent`: botão principal, FAB, valor, com texto grafite); azul `#3D7DCA` = estrutura (`--md-primary` #2F6DB8 em texto para AA: navegação, links, foco, seleção, botões tonais); vermelho `#CC0000` = com moderação (`--md-error`: destrutivo, obturador do Scan, logo); grafite `#1F2937` no texto; cinza claro `#F5F7FA` no fundo; superfícies brancas.
+  2. *Cartas:* a arte é o destaque; nenhum fundo colorido competindo com ela.
+  3. *Funcionais:* tipos (`--type-*`, paleta oficial atual dos jogos, via `type_chip()`) e raridade (`--tier-*`), sempre com texto.
 - **Tipografia:** **Roboto Flex** local (`static/fonts`, licença OFL) com a escala M3 (`--display-*`, `--headline-*`, `--title-*`, `--body-*`, `--label-*`). Nada de outra fonte; números com `tabular-nums`.
 - **Ícones:** só o macro `icon()` de `partials/_icons.html` — Material Symbols Rounded (Apache 2.0) + desenhos próprios no mesmo traço (pokébola). Contorno no estado normal, preenchido no ativo. Sem emojis na interface.
 - **Universo Pokémon com moderação:** logo e item "Coleção" = pokébola própria (genérica, desenhada no projeto); raridade pelos **símbolos impressos nas cartas** (● comum, ◆ incomum, ★ rara; brilho nas especiais) via `rarity_icon(tier)`; avaliação = insígnia (como as de ginásio); obturador do Scan = botão redondo da Pokédex. Nunca o logo "Pokémon" nem artes oficiais na interface (as imagens de cartas são conteúdo).

@@ -1,5 +1,5 @@
 {# Vitrine do Scan: usada na página (sem JS) e no fragmento que o JS insere. Nada aqui é salvo. #}
-{% from 'partials/_icons.html' import icon, rarity_icon %}
+{% from 'partials/_icons.html' import icon, rarity_icon, type_chip %}
 {% set c = result.card %}
 {% set p = result.price %}
 {% set official = result.images.official %}
@@ -21,6 +21,7 @@
       <h2 class="detail-name">{{ c.pokemon_name }}</h2>
       <div class="chips">
         {% if c.rarity %}<span class="chip rarity-chip tier-{{ result.tier }}">{{ rarity_icon(result.tier) }}{{ c.rarity }}</span>{% endif %}
+        {% for t in (extra.types if extra.types is not string else [extra.types]) or [] %}{{ type_chip(t) }}{% endfor %}
         {% if c.collection_source in ('catalogo', 'codigo') %}
           <span class="chip chip-ok">{{ icon('verified', fill=true) }}Conferida no catálogo</span>
         {% else %}
@@ -79,7 +80,6 @@
       <div><dt>Raridade</dt><dd>{{ c.rarity or '—' }}</dd></div>
       <div><dt>Idioma</dt><dd>{{ c.language or '—' }}</dd></div>
       {% if extra.hp %}<div><dt>HP</dt><dd>{{ extra.hp }}</dd></div>{% endif %}
-      {% if extra.types %}<div><dt>Tipo</dt><dd>{{ extra.types|join(', ') if extra.types is not string else extra.types }}</dd></div>{% endif %}
       {% if extra.illustrator %}<div><dt>Ilustrador</dt><dd>{{ extra.illustrator }}</dd></div>{% endif %}
     </dl>
 

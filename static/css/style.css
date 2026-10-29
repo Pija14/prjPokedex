@@ -11,58 +11,97 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ---------- Tokens: cor (esquema claro, semente vermelho Pokédex) ---------- */
+/* ---------- Tokens: cor ----------
+   Paleta Pokémon em três camadas:
+   1. Identidade: amarelo Pokémon = destaque (ação principal, FAB, valor); azul Pokémon = estrutura
+      (navegação, links, foco, seleção); vermelho Poké Ball = com moderação (destrutivo, Scan, logo);
+      grafite nos textos e cinza claro no fundo.
+   2. Cartas: a arte é o destaque; nada de fundos coloridos competindo com ela.
+   3. Funcionais: tipos de Pokémon (--type-*) e raridade (--tier-*), sempre acompanhados de texto. */
 :root {
-  --md-primary: #b3202a;
+  /* Marca (valores de referência) */
+  --brand-yellow: #ffcb05;
+  --brand-blue: #3d7dca;
+  --brand-red: #cc0000;
+  --brand-graphite: #1f2937;
+  --brand-mist: #f5f7fa;
+
+  /* Destaque (amarelo): botões principais e FAB, com texto grafite (contraste 11:1) */
+  --md-accent: var(--brand-yellow);
+  --md-on-accent: var(--brand-graphite);
+  /* Estrutura (azul). Em texto usa o tom 40 (#2f6db8, 4,9:1 sobre o fundo); #3d7dca só em áreas preenchidas. */
+  --md-primary: #2f6db8;
   --md-on-primary: #ffffff;
-  --md-primary-container: #ffdad7;
-  --md-on-primary-container: #410005;
-  --md-secondary: #775653;
+  --md-primary-container: #d6e4f7;
+  --md-on-primary-container: #0b2a50;
+  --md-secondary: #4a5d78;
   --md-on-secondary: #ffffff;
-  --md-secondary-container: #ffdad7;
-  --md-on-secondary-container: #2c1513;
-  --md-tertiary: #2c5ea8;          /* azul Pokémon */
+  --md-secondary-container: #d6e4f7;
+  --md-on-secondary-container: #0b2a50;
+  --md-tertiary: var(--brand-blue);
   --md-on-tertiary: #ffffff;
-  --md-tertiary-container: #d7e3ff;
-  --md-on-tertiary-container: #001b3e;
-  --md-gold: #ffcb05;              /* amarelo Pikachu: só no valor */
-  --md-gold-container: #fff1bf;
-  --md-on-gold-container: #2b2200;
+  --md-tertiary-container: #e4edf9;
+  --md-on-tertiary-container: #0b2a50;
+  --md-gold: var(--brand-yellow);
+  --md-gold-container: #fff3c4;
+  --md-on-gold-container: var(--brand-graphite);
   --md-success: #1d6b3a;
-  --md-success-container: #c4f0cc;
+  --md-success-container: #d3f2db;
   --md-on-success-container: #00210c;
-  --md-warning-container: #ffefc2;
+  --md-warning-container: #fff3c4;
   --md-on-warning-container: #3d2e00;
-  --md-error: #ba1a1a;
+  /* Vermelho Poké Ball: erro e ações destrutivas */
+  --md-error: var(--brand-red);
   --md-on-error: #ffffff;
-  --md-error-container: #ffdad6;
-  --md-on-error-container: #410002;
-  --md-surface: #fbf8f8;
-  --md-surface-dim: #dcd9d9;
+  --md-error-container: #fde2e0;
+  --md-on-error-container: #5c0000;
+  /* Neutros: fundo cinza claro, superfícies brancas, texto grafite */
+  --md-surface: var(--brand-mist);
+  --md-surface-dim: #d9dee6;
   --md-surface-container-lowest: #ffffff;
-  --md-surface-container-low: #f6f2f2;
-  --md-surface-container: #f0eded;
-  --md-surface-container-high: #eae7e7;
-  --md-surface-container-highest: #e5e1e1;
-  --md-on-surface: #1c1b1b;
-  --md-on-surface-variant: #4f4645;
-  --md-outline: #807574;
-  --md-outline-variant: #d3c4c2;
-  --md-inverse-surface: #313030;
-  --md-inverse-on-surface: #f4f0f0;
-  --md-inverse-primary: #ffb3ae;
+  --md-surface-container-low: #ffffff;
+  --md-surface-container: #eef1f5;
+  --md-surface-container-high: #e7ebf0;
+  --md-surface-container-highest: #e0e5ec;
+  --md-on-surface: var(--brand-graphite);
+  --md-on-surface-variant: #4b5563;
+  --md-outline: #6b7280;
+  --md-outline-variant: #d5dbe3;
+  --md-inverse-surface: var(--brand-graphite);
+  --md-inverse-on-surface: #f3f4f6;
+  --md-inverse-primary: #9cc1f0;
   --md-scrim: #000000;
-  --logo-red: #e3350d;
-  --logo-ink: #1c1b1b;
+  --logo-red: var(--brand-red);
+  --logo-ink: var(--brand-graphite);
   --logo-white: #ffffff;
 
   /* Raridade (símbolo impresso na carta: ● ◆ ★) */
-  --tier-common: #7b7474;
+  --tier-common: #6b7280;
   --tier-uncommon: #2e7d4f;
-  --tier-rare: #2c5ea8;
+  --tier-rare: var(--brand-blue);
   --tier-holo: #7b4fd0;
-  --tier-ultra: #a67c00;
+  --tier-ultra: #b38600;
   --tier-secret: #c2185b;
+
+  /* Tipos de Pokémon — uma única referência: a paleta oficial atual dos jogos */
+  --type-normal: #9fa19f;
+  --type-fire: #e62829;
+  --type-water: #2980ef;
+  --type-grass: #3fa129;
+  --type-electric: #fac000;
+  --type-ice: #3dcef3;
+  --type-fighting: #ff8000;
+  --type-poison: #9141cb;
+  --type-ground: #915121;
+  --type-flying: #81b9ef;
+  --type-psychic: #ef4179;
+  --type-bug: #91a119;
+  --type-rock: #afa981;
+  --type-ghost: #704170;
+  --type-dragon: #5060e1;
+  --type-dark: #624d4e;
+  --type-steel: #60a1b8;
+  --type-fairy: #ef70ef;
 
   /* ---------- Tipografia M3 (Roboto Flex) ---------- */
   --md-font: "Roboto Flex", Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
@@ -102,53 +141,52 @@
   color-scheme: light dark;
 }
 
-/* Tema escuro M3 (automático, pelo sistema) */
+/* Tema escuro (automático, pelo sistema): grafite como superfície, amarelo segue como destaque */
 @media (prefers-color-scheme: dark) {
   :root {
-    --md-primary: #ffb3ae;
-    --md-on-primary: #68000d;
-    --md-primary-container: #91071a;
-    --md-on-primary-container: #ffdad7;
-    --md-secondary: #e7bdb8;
-    --md-on-secondary: #442927;
-    --md-secondary-container: #5d3f3c;
-    --md-on-secondary-container: #ffdad7;
-    --md-tertiary: #abc7ff;
-    --md-on-tertiary: #002f65;
-    --md-tertiary-container: #08458e;
-    --md-on-tertiary-container: #d7e3ff;
-    --md-gold-container: #4a3c00;
-    --md-on-gold-container: #ffe17a;
+    --md-primary: #9cc1f0;
+    --md-on-primary: #0b2a50;
+    --md-primary-container: #1f4a80;
+    --md-on-primary-container: #d6e4f7;
+    --md-secondary: #b6c6dd;
+    --md-secondary-container: #2c3e57;
+    --md-on-secondary-container: #d6e4f7;
+    --md-tertiary: #9cc1f0;
+    --md-on-tertiary: #0b2a50;
+    --md-tertiary-container: #1f3a5f;
+    --md-on-tertiary-container: #d6e4f7;
+    --md-gold-container: #3d3205;
+    --md-on-gold-container: #ffe37a;
     --md-success: #8fd8a1;
-    --md-success-container: #005228;
+    --md-success-container: #0f3d22;
     --md-on-success-container: #c4f0cc;
-    --md-warning-container: #4a3c00;
-    --md-on-warning-container: #ffe17a;
-    --md-error: #ffb4ab;
-    --md-on-error: #690005;
-    --md-error-container: #93000a;
+    --md-warning-container: #3d3205;
+    --md-on-warning-container: #ffe37a;
+    --md-error: #ff8a80;
+    --md-on-error: #5c0000;
+    --md-error-container: #6b0b0b;
     --md-on-error-container: #ffdad6;
-    --md-surface: #141313;
-    --md-surface-dim: #141313;
-    --md-surface-container-lowest: #0f0e0e;
-    --md-surface-container-low: #1c1b1b;
-    --md-surface-container: #201f1f;
-    --md-surface-container-high: #2b2a29;
-    --md-surface-container-highest: #363434;
-    --md-on-surface: #e6e1e1;
-    --md-on-surface-variant: #d3c4c2;
-    --md-outline: #9c8e8d;
-    --md-outline-variant: #4f4645;
-    --md-inverse-surface: #e6e1e1;
-    --md-inverse-on-surface: #313030;
-    --md-inverse-primary: #b3202a;
-    --logo-ink: #e6e1e1;
-    --logo-white: #f4f0f0;
-    --tier-common: #b5abaa;
+    --md-surface: #111827;
+    --md-surface-dim: #111827;
+    --md-surface-container-lowest: #0b1120;
+    --md-surface-container-low: #1a2231;
+    --md-surface-container: #1f2937;
+    --md-surface-container-high: #283344;
+    --md-surface-container-highest: #323e50;
+    --md-on-surface: #f3f4f6;
+    --md-on-surface-variant: #c3cad5;
+    --md-outline: #8b95a5;
+    --md-outline-variant: #374151;
+    --md-inverse-surface: #f3f4f6;
+    --md-inverse-on-surface: #1f2937;
+    --md-inverse-primary: #2f6db8;
+    --logo-ink: #f3f4f6;
+    --logo-white: #f3f4f6;
+    --tier-common: #aab2bf;
     --tier-uncommon: #7fd49d;
-    --tier-rare: #abc7ff;
+    --tier-rare: #9cc1f0;
     --tier-holo: #cfb5ff;
-    --tier-ultra: #f0c541;
+    --tier-ultra: #ffcb05;
     --tier-secret: #ff8fc0;
   }
 }
@@ -172,7 +210,7 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
 .visually-hidden, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip-link { position: absolute; left: 16px; top: -60px; z-index: 100; padding: 8px 16px; border-radius: var(--shape-full); background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); font: var(--label-large); }
 .skip-link:focus { top: 8px; }
-:focus-visible { outline: 3px solid var(--md-tertiary); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--md-primary); outline-offset: 2px; }
 code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-surface-container-high); font-size: .92em; }
 
 .icon { width: 24px; height: 24px; flex: none; fill: currentColor; }
@@ -235,7 +273,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 /* ---------- FAB ---------- */
 .fab {
   display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: var(--shape-lg);
-  background: var(--md-primary-container); color: var(--md-on-primary-container); box-shadow: var(--elev-3);
+  background: var(--md-accent); color: var(--md-on-accent); box-shadow: var(--elev-3);
   text-decoration: none; transition: box-shadow var(--dur-short) var(--ease), transform var(--dur-short) var(--ease);
 }
 .fab:hover { box-shadow: 0 6px 10px 4px rgba(0, 0, 0, .15), 0 2px 3px rgba(0, 0, 0, .3); }
@@ -277,7 +315,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 }
 .btn .icon { width: 18px; height: 18px; margin-left: -8px; }
 .btn .icon:last-child:not(:first-child) { margin-left: 0; margin-right: -8px; } /* ícone depois do texto */
-.btn-filled, .btn-primary { background: var(--md-primary); color: var(--md-on-primary); }
+.btn-filled, .btn-primary { background: var(--md-accent); color: var(--md-on-accent); }
 .btn-filled:hover, .btn-primary:hover { box-shadow: var(--elev-1); }
 .btn-tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .btn-tertiary { background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); }
@@ -316,6 +354,28 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .tier-none { --tier: var(--md-outline); }
 .rarity-icon { width: 14px; height: 14px; fill: var(--tier, var(--md-outline)); }
 .rarity-chip .rarity-icon { width: 16px; height: 16px; }
+
+/* Tipos de Pokémon: bolinha na cor do tipo + fundo bem suave; o nome sempre aparece */
+.type-chip { gap: 6px; border-color: transparent; background: color-mix(in srgb, var(--type) 14%, transparent); color: var(--md-on-surface); }
+.type-chip::before { content: ""; width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--type); box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-on-surface) 12%, transparent); }
+.type-normal { --type: var(--type-normal); }
+.type-fire { --type: var(--type-fire); }
+.type-water { --type: var(--type-water); }
+.type-grass { --type: var(--type-grass); }
+.type-electric { --type: var(--type-electric); }
+.type-ice { --type: var(--type-ice); }
+.type-fighting { --type: var(--type-fighting); }
+.type-poison { --type: var(--type-poison); }
+.type-ground { --type: var(--type-ground); }
+.type-flying { --type: var(--type-flying); }
+.type-psychic { --type: var(--type-psychic); }
+.type-bug { --type: var(--type-bug); }
+.type-rock { --type: var(--type-rock); }
+.type-ghost { --type: var(--type-ghost); }
+.type-dragon { --type: var(--type-dragon); }
+.type-dark { --type: var(--type-dark); }
+.type-steel { --type: var(--type-steel); }
+.type-fairy { --type: var(--type-fairy); }
 
 /* ---------- Card de carta (coleção) ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
@@ -364,8 +424,8 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .action-card .action-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--shape-lg); }
 .action-card strong { display: block; font: var(--title-medium); }
 .action-card span { color: var(--md-on-surface-variant); font: var(--body-small); }
-.action-card.is-scan .action-icon { background: var(--md-primary); color: var(--md-on-primary); }
-.action-card.is-add .action-icon { background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); }
+.action-card.is-scan .action-icon { background: var(--md-accent); color: var(--md-on-accent); }
+.action-card.is-add .action-icon { background: var(--md-primary-container); color: var(--md-on-primary-container); }
 
 /* ---------- Estado vazio ---------- */
 .empty { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-10) var(--space-4); border-radius: var(--shape-xl); background: var(--md-surface-container-low); text-align: center; }
@@ -472,7 +532,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .dropzone.is-ready { border-style: solid; border-color: var(--md-success); }
 .dropzone input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .dropzone-empty { display: grid; justify-items: center; gap: var(--space-2); color: var(--md-on-surface-variant); }
-.dropzone-empty .icon { width: 40px; height: 40px; color: var(--md-primary); }
+.dropzone-empty .icon { width: 40px; height: 40px; color: var(--md-tertiary); }
 .dropzone-empty strong { color: var(--md-on-surface); font: var(--title-medium); }
 .dropzone-empty small { font: var(--body-small); }
 .dropzone-preview { max-height: 340px; width: auto; border-radius: var(--shape-md); box-shadow: var(--elev-2); }
@@ -617,7 +677,7 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 .criterion-head h3 .icon { width: 20px; height: 20px; color: var(--md-on-surface-variant); }
 .criterion-score { flex: none; font: var(--title-medium); font-variant-numeric: tabular-nums; }
 .criterion-bar { height: 4px; overflow: hidden; border-radius: var(--shape-full); background: var(--md-surface-container-highest); }
-.criterion-bar span { display: block; height: 100%; border-radius: inherit; background: var(--md-primary); }
+.criterion-bar span { display: block; height: 100%; border-radius: inherit; background: var(--md-tertiary); }
 .criterion p { color: var(--md-on-surface-variant); font: var(--body-medium); }
 .criterion-detail { display: grid; gap: 2px; margin: 0; font: var(--body-small); }
 .criterion-detail > div { display: flex; justify-content: space-between; gap: var(--space-3); padding: 2px 0; }
@@ -668,10 +728,10 @@ code { padding: 1px 6px; border-radius: var(--shape-xs); background: var(--md-su
 /* Obturador: botão grande, como o da Pokédex */
 .scan-shutter {
   flex: none; display: grid; place-items: center; width: 80px; height: 80px; padding: 0; border-radius: 50%; cursor: pointer;
-  border: 4px solid var(--md-surface); background: var(--md-primary); box-shadow: 0 0 0 2px var(--md-primary), var(--elev-2);
+  border: 4px solid var(--md-surface); background: var(--brand-red); box-shadow: 0 0 0 2px var(--brand-red), var(--elev-2);
   transition: transform var(--dur-short) var(--ease);
 }
-.scan-shutter span { width: 26px; height: 26px; border: 3px solid var(--md-on-primary); border-radius: 50%; }
+.scan-shutter span { width: 26px; height: 26px; border: 3px solid #fff; border-radius: 50%; }
 .scan-shutter:active { transform: scale(.94); }
 .scan-shutter:focus-visible { outline: 3px solid var(--md-tertiary); outline-offset: 6px; }
 .scan-result:focus { outline: none; }
