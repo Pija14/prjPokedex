@@ -83,16 +83,6 @@ def brl(value) -> str:
     return f"R$ {int(whole):,}".replace(",", ".") + f",{cents}"
 
 
-CURRENCY_SYMBOLS = {"BRL": "R$", "USD": "US$", "EUR": "€"}
-
-
-def money(value, currency: str = "BRL") -> str:
-    """Valor em outra moeda no formato brasileiro: 954.65, 'USD' → 'US$ 954,65'."""
-    if value is None:
-        return "—"
-    return brl(value).replace("R$", CURRENCY_SYMBOLS.get(currency, currency), 1)
-
-
 def date_br(value) -> str:
     if value is None:
         return "—"
@@ -107,7 +97,6 @@ def date_br(value) -> str:
 def _register_template_helpers(app: Flask) -> None:
     app.add_template_filter(brl, "brl")
     app.add_template_filter(date_br, "date_br")
-    app.add_template_filter(money, "money")
     app.add_template_global(image_service.image_url, "image_url")
     app.add_template_global(card_service.rarity_tier, "rarity_tier")
     app.add_template_global(app.config["MAX_IMAGE_MB"], "max_image_mb")

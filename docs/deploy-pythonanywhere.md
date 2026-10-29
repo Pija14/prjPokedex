@@ -95,7 +95,7 @@ Sempre rode o `pip install -r requirements.txt` depois do `git pull`: versões n
 
 - **"Something went wrong" / erro 500:** aba **Web → Log files → Error log**. A mensagem `CardDex em produção sem configuração de segurança` indica que falta rodar `python scripts/set_password.py` (passo 3).
 - **A IA não responde:** confira `GEMINI_API_KEY` no `.env` e o Error log. No plano gratuito o PythonAnywhere só libera alguns sites; o Gemini (`*.googleapis.com`) está na lista liberada.
-- **Scan sem imagem oficial nem valor:** o catálogo `api.pokemontcg.io` precisa estar na lista de sites liberados do plano gratuito (veja em https://www.pythonanywhere.com/whitelist/). Se não estiver, o Scan continua funcionando, mas só com a foto, os dados da IA e o link da Liga Pokémon. No PythonAnywhere (HTTPS) a câmera ao vivo do Scan funciona no celular.
+- **Scan sem imagem oficial nem valor:** o catálogo `api.pokemontcg.io` e a cotação `economia.awesomeapi.com.br` precisam estar na lista de sites liberados do plano gratuito (veja em https://www.pythonanywhere.com/whitelist/). Se não estiver, o Scan continua funcionando, mas só com a foto, os dados da IA e o link da Liga Pokémon. No PythonAnywhere (HTTPS) a câmera ao vivo do Scan funciona no celular.
 - **Esqueci a senha:** rode `python scripts/set_password.py` no console e dê Reload.
 
 ## Limites do plano gratuito

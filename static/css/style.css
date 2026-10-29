@@ -621,7 +621,8 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
 }
 .showcase-card.is-tilting { transition: transform .08s linear; }
 .showcase-card img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 13px; background: #e9edf5; }
-.showcase-card img[hidden] { display: none; }
+.showcase-empty { height: 100%; border-radius: 13px; font-size: 14px; }
+.showcase-empty[hidden] { display: none; }
 .showcase-sheen {
   position: absolute; inset: 8px; border-radius: 13px; pointer-events: none;
   background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .5), transparent 42%);
@@ -634,13 +635,6 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
   background-size: 100% 100%, 300% 300%; background-position: center, var(--mx) var(--my);
   mix-blend-mode: overlay;
 }
-.segmented { display: inline-flex; gap: 2px; padding: 4px; border-radius: var(--r-full); background: var(--surface); box-shadow: var(--shadow-1); }
-.segmented button {
-  min-height: 44px; padding: 0 var(--space-5); border: 0; border-radius: var(--r-full); background: transparent;
-  color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: background .2s var(--ease), color .2s var(--ease);
-}
-.segmented button[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.segmented button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 .showcase-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
 .showcase-tags .rarity-badge.is-static { margin-top: 0; }
 .source-chip { padding: 4px 12px; border-radius: var(--r-full); font-size: 12px; font-weight: 800; }

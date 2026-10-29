@@ -6,16 +6,12 @@
 <article class="showcase tier-{{ result.tier }}" data-showcase>
   <div class="showcase-art">
     <div class="showcase-card" data-tilt>
-      <img src="{{ result.images.photo }}" alt="Sua foto da carta {{ c.pokemon_name }}" data-view="photo">
-      {% if official %}<img src="{{ official }}" alt="Imagem oficial da carta {{ c.pokemon_name }}" data-view="official" hidden>{% endif %}
+      {% if official %}<img src="{{ official }}" alt="Carta {{ c.pokemon_name }} (imagem oficial)" width="734" height="1024" data-official>{% endif %}
+      <div class="card-art-empty showcase-empty" data-official-empty{% if official %} hidden{% endif %}>
+        {% with size=88, uid='sc' %}{% include 'partials/_logo.html' %}{% endwith %}<span>Imagem oficial indisponível</span>
+      </div>
       <span class="showcase-sheen" aria-hidden="true"></span>
     </div>
-    {% if official %}
-    <div class="segmented" role="group" aria-label="Imagem exibida">
-      <button type="button" aria-pressed="true" data-view-btn="photo">Sua foto</button>
-      <button type="button" aria-pressed="false" data-view-btn="official">Oficial</button>
-    </div>
-    {% endif %}
   </div>
 
   <div class="showcase-body">
@@ -36,18 +32,18 @@
     <div class="price-panel scan-price">
       <span class="price-label">{{ 'Valor de referência' if p.main else 'Valor' }}</span>
       {% if p.main %}
-        <strong class="price-value">{{ p.main.value|money(p.main.currency) }}</strong>
-        <span class="price-meta">{{ p.main.source }} · {{ p.main.label }}{% if p.updated_at %} · atualizado em {{ p.updated_at }}{% endif %}</span>
+        <strong class="price-value">{{ p.main.value|brl }}</strong>
+        <span class="price-meta">{{ p.main.source }} · {{ p.main.label }}{% if p.updated_at %} · preço de {{ p.updated_at }}{% endif %}</span>
         {% if p.variants or p.cardmarket %}
         <dl class="price-more">
-          {% for v in p.variants or [] %}<div><dt>TCGplayer · {{ v.label }}</dt><dd>{{ v.value|money(v.currency) }}</dd></div>{% endfor %}
-          {% if p.cardmarket %}<div><dt>Cardmarket · média de venda</dt><dd>{{ (p.cardmarket.average or p.cardmarket.trend)|money('EUR') }}</dd></div>{% endif %}
+          {% for v in p.variants or [] %}<div><dt>TCGplayer · {{ v.label }}</dt><dd>{{ v.value|brl }}</dd></div>{% endfor %}
+          {% if p.cardmarket %}<div><dt>Cardmarket · média de venda</dt><dd>{{ p.cardmarket|brl }}</dd></div>{% endif %}
         </dl>
         {% endif %}
-        <span class="price-meta">Preço internacional (cotação lá fora), não o valor no Brasil.</span>
+        <span class="price-meta">Preço internacional convertido para reais{% if p.rate_date %} pela cotação de {{ p.rate_date }}{% endif %}. Na Liga o valor pode ser diferente.</span>
       {% else %}
         <strong class="price-value is-empty">Sem preço de referência</strong>
-        <span class="price-meta">O catálogo internacional não tem preço para esta carta.</span>
+        <span class="price-meta">{{ 'Cotação do dólar indisponível no momento. Tente de novo em instantes.' if p.missing == 'sem_cotacao' else 'O catálogo internacional não tem preço para esta carta.' }}</span>
       {% endif %}
       {% if p.liga_url %}
       <a class="btn liga-btn" href="{{ p.liga_url }}" target="_blank" rel="noopener noreferrer">

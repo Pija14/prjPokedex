@@ -1,5 +1,4 @@
 """Armazenamento seguro das imagens das cartas em static/images/cards/."""
-import io
 import uuid
 from pathlib import Path
 
@@ -42,42 +41,6 @@ def read_for_analysis(file: FileStorage) -> tuple[bytes, str]:
     if kind is None:
         raise ImageError("O arquivo não é uma imagem válida. Envie JPG, PNG ou WEBP.")
     return data, _MIME_TYPES[kind]
-
-
-def enhance_for_display(data: bytes, box=None, max_height: int = 900) -> bytes:
-    """Versão "vitrine" da foto, só em memória: recorta a carta (caixa da IA), endireita a orientação
-    e realça cor, contraste e nitidez. Devolve WEBP; nada é salvo."""
-    from PIL import Image, ImageEnhance, ImageFilter, ImageOps
-
-    with Image.open(io.BytesIO(data)) as source:
-        img = ImageOps.exif_transpose(source).convert("RGB")
-    crop = _crop_box(box, img.width, img.height)
-    if crop:
-        img = img.crop(crop)
-    if img.height > max_height:
-        img = img.resize((round(img.width * max_height / img.height), max_height), Image.LANCZOS)
-    img = ImageOps.autocontrast(img, cutoff=1)
-    img = ImageEnhance.Color(img).enhance(1.12)
-    img = ImageEnhance.Contrast(img).enhance(1.08)
-    img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=120, threshold=3))
-    out = io.BytesIO()
-    img.save(out, "WEBP", quality=85)
-    return out.getvalue()
-
-
-def _crop_box(box, width: int, height: int) -> tuple[int, int, int, int] | None:
-    """[ymin, xmin, ymax, xmax] normalizado 0–1000 (formato do Gemini) → caixa em pixels, com 2% de folga.
-    Caixas inválidas ou pequenas demais (leitura errada da IA) são ignoradas: fica a foto inteira."""
-    try:
-        ymin, xmin, ymax, xmax = (max(0.0, min(1000.0, float(v))) for v in box)
-    except (TypeError, ValueError):
-        return None
-    if ymax - ymin < 200 or xmax - xmin < 150:
-        return None
-    pad = 20
-    left, top = (xmin - pad) * width / 1000, (ymin - pad) * height / 1000
-    right, bottom = (xmax + pad) * width / 1000, (ymax + pad) * height / 1000
-    return max(0, round(left)), max(0, round(top)), min(width, round(right)), min(height, round(bottom))
 
 
 def _extension(filename: str) -> str:

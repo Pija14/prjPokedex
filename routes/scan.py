@@ -3,36 +3,24 @@
 Só consulta: nada é gravado no banco nem em disco. A "vitrine" é um único template
 (partials/_scan_result.html), usado na página sem JavaScript e no fragmento que o JS insere.
 """
-import base64
-import logging
-
 from flask import Blueprint, jsonify, render_template, request, url_for
 
 from services import card_service, catalog_service, gemini_service, image_service, price_service
-
-logger = logging.getLogger("carddex.scan")
 
 scan = Blueprint("scan", __name__)
 
 
 def _analyze(file) -> dict:
-    """Executa o scan e devolve os dados da vitrine. Lança ImageError/GeminiError."""
+    """Executa o scan e devolve os dados da vitrine. Lança ImageError/GeminiError.
+    A foto só serve para o reconhecimento: na tela aparece a imagem oficial da carta."""
     data, mime = image_service.read_for_analysis(file)
     identification = gemini_service.identify_card(data, mime_type=mime)
     catalog_service.confirm(identification)
-    try:
-        photo, photo_mime = image_service.enhance_for_display(data, identification.extra.get("card_box")), "image/webp"
-    except Exception:  # realce é enfeite: se falhar, mostra a foto como veio
-        logger.exception("Falha ao realçar a foto")
-        photo, photo_mime = data, mime
     catalog = identification.catalog or {}
     return {
         "card": identification.to_dict(),
         "tier": card_service.rarity_tier(identification.rarity),
-        "images": {
-            "photo": f"data:{photo_mime};base64,{base64.b64encode(photo).decode()}",
-            "official": catalog.get("image_large") or catalog.get("image_small"),
-        },
+        "images": {"official": catalog.get("image_large") or catalog.get("image_small")},
         "price": price_service.quote(identification).to_dict(),
         "add_url": url_for("pages.new_card", **identification.as_prefill()),
     }
@@ -70,7 +58,7 @@ def scan_submit():
 
 @scan.post("/api/scan")
 def scan_api():
-    """Mesmo scan em JSON (campo `image`)."""
+    """Mesmo scan em JSON (campo `image`). Valores em R$."""
     file = request.files.get("image")
     if not image_service.has_file(file):
         return jsonify({"errors": {"image": "Envie a foto da carta."}}), 400

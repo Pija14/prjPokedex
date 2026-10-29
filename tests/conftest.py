@@ -7,7 +7,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app  # noqa: E402
-from services import catalog_service  # noqa: E402
+from services import catalog_service, price_service  # noqa: E402
 
 # Menores arquivos válidos de cada formato (só a assinatura importa para a validação).
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
@@ -21,6 +21,10 @@ def catalog_offline(monkeypatch):
     monkeypatch.setattr(catalog_service, "_get", lambda path, params: None)
     monkeypatch.setitem(catalog_service._memory, "sets", None)
     monkeypatch.setitem(catalog_service._memory, "loaded_at", 0.0)
+    # Cotação do dólar/euro também simulada (sem cotação = sem valor); test_scan define uma fixa.
+    monkeypatch.setattr(price_service, "_fetch_rates", lambda: None)
+    monkeypatch.setitem(price_service._rates_cache, "rates", None)
+    monkeypatch.setitem(price_service._rates_cache, "loaded_at", 0.0)
 
 
 @pytest.fixture()

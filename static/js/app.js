@@ -489,20 +489,14 @@
       canvas.toBlob(resolve, "image/jpeg", 0.92);
     });
 
-    // Vitrine: alternar "Sua foto / Oficial" e inclinar a carta seguindo o dedo/mouse.
+    // Vitrine: imagem oficial da carta, inclinada seguindo o dedo/mouse.
     const initShowcase = (root) => {
       const card = root.querySelector("[data-tilt]");
       if (!card) return;
-      const buttons = [...root.querySelectorAll("[data-view-btn]")];
-      buttons.forEach((button) => button.addEventListener("click", () => {
-        buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-        card.querySelectorAll("[data-view]").forEach((img) => { img.hidden = img.dataset.view !== button.dataset.viewBtn; });
-      }));
-      card.querySelector('[data-view="official"]')?.addEventListener("error", (event) => {
-        event.target.remove(); // imagem oficial fora do ar: fica só a foto
-        root.querySelector(".segmented")?.remove();
-        card.querySelector('[data-view="photo"]').hidden = false;
-      });
+      const official = card.querySelector("[data-official]");
+      const showEmpty = () => { official?.remove(); card.querySelector("[data-official-empty]").hidden = false; };
+      if (official?.complete && !official.naturalWidth) showEmpty(); // já falhou antes do JS
+      official?.addEventListener("error", showEmpty); // imagem oficial fora do ar
       if (reduceMotion.matches) return;
       const tilt = (event) => {
         const box = card.getBoundingClientRect();
