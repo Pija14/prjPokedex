@@ -1,31 +1,65 @@
 {% extends 'base.html' %}
 {% import 'partials/_grading.html' as g %}
+{% from 'partials/_icons.html' import icon, rarity_icon %}
 {% block title %}{{ card.pokemon_name }}{% endblock %}
 {% block content %}
 {% set tier = rarity_tier(card.rarity) %}
-<a class="back-link" href="{{ url_for('pages.collection') }}">
-  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Minha Coleção
-</a>
+<a class="back-link" href="{{ url_for('pages.collection') }}">{{ icon('arrow_back') }}Minha Coleção</a>
 
 <article class="detail tier-{{ tier }}">
   <div class="detail-art">
     {% if card.image_path %}
       <img src="{{ image_url(card.image_path) }}" alt="Carta {{ card.pokemon_name }}" width="490" height="684">
     {% else %}
-      <div class="card-art-empty is-large" aria-hidden="true">{% with size=96, uid='d' %}{% include 'partials/_logo.html' %}{% endwith %}<span>Sem imagem</span></div>
+      <div class="card-art-empty" aria-hidden="true">{% with size=80, uid='d' %}{% include 'partials/_logo.html' %}{% endwith %}<span>Sem imagem</span></div>
     {% endif %}
   </div>
 
   <div class="detail-body">
-    <p class="overline">{{ card.collection_name or 'Coleção não informada' }}{% if card.card_number %} · #{{ card.card_number }}{% endif %}</p>
-    <h1 class="detail-name">{{ card.pokemon_name }}</h1>
-    {% if card.rarity %}<span class="rarity-badge tier-{{ tier }} is-static">{{ card.rarity }}</span>{% endif %}
+    <header class="detail-head">
+      <p class="overline">{{ card.collection_name or 'Coleção não informada' }}{% if card.card_number %} · {{ card.card_number }}{% endif %}</p>
+      <h1 class="detail-name">{{ card.pokemon_name }}</h1>
+      <div class="chips">
+        {% if card.rarity %}<span class="chip rarity-chip tier-{{ tier }}">{{ rarity_icon(tier) }}{{ card.rarity }}</span>{% endif %}
+        {% if card.language %}<span class="chip">{{ card.language }}</span>{% endif %}
+        {% if card.official_grade %}<span class="chip chip-ok">{{ icon('workspace_premium', fill=true) }}{{ card.grading_company }} {{ card.official_grade }}</span>{% endif %}
+      </div>
+    </header>
 
-    <div class="price-panel">
+    <div class="price-card">
       <span class="price-label">Valor</span>
-      <strong class="price-value">{{ card.price|brl if card.price is not none else 'Sem valor' }}</strong>
+      <strong class="price-value{% if card.price is none %} is-empty{% endif %}">{{ card.price|brl if card.price is not none else 'Sem valor' }}</strong>
       <span class="price-meta">{% if card.price_source %}{{ card.price_source }}{% else %}Fonte não informada{% endif %}{% if card.price_date %} · {{ card.price_date|date_br }}{% endif %}</span>
     </div>
+
+    <div class="detail-actions">
+      <a class="btn btn-filled" href="{{ url_for('pages.edit_card', card_id=card.id) }}">{{ icon('edit') }}Editar</a>
+      <a class="btn btn-tonal" href="{{ url_for('grading.grade_page', card_id=card.id) }}">{{ icon('workspace_premium') }}Avaliar condição</a>
+      <form method="post" action="{{ url_for('pages.delete_card', card_id=card.id) }}" data-confirm="Excluir {{ card.pokemon_name }} da coleção? Esta ação não pode ser desfeita.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger" type="submit">{{ icon('delete') }}Excluir</button>
+      </form>
+    </div>
+
+    {% set latest = card.evaluations[0] if card.evaluations else none %}
+    {% if card.official_grade or latest %}
+    <div class="grade-compare">
+      {% if card.official_grade %}
+      <div class="grade-box is-official">
+        <span class="grade-box-label">{{ icon('workspace_premium', fill=true) }}{{ card.grading_company }} oficial</span>
+        <strong class="grade-box-value">{{ card.official_grade }}</strong>
+        <span class="grade-box-meta">Nota atribuída pela empresa</span>
+      </div>
+      {% endif %}
+      {% if latest %}
+      <a class="grade-box is-estimate" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=latest.id) }}">
+        <span class="grade-box-label">{{ icon('auto_awesome', fill=true) }}Estimativa IA</span>
+        <strong class="grade-box-value">{{ g.range_text(latest.estimated_range) }}</strong>
+        <span class="grade-box-meta">Possível faixa PSA · confiança {{ g.confidence_text(latest.confidence)|lower }}</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
 
     <dl class="info-list">
       <div><dt>Coleção</dt><dd>{{ card.collection_name or '—' }}</dd></div>
@@ -39,65 +73,31 @@
       {% if card.updated_at and card.updated_at != card.created_at %}<div><dt>Atualizado em</dt><dd>{{ card.updated_at|date_br }}</dd></div>{% endif %}
     </dl>
 
-    {% set latest = card.evaluations[0] if card.evaluations else none %}
-    {% if card.official_grade or latest %}
-    <div class="grade-compare">
-      {% if card.official_grade %}
-      <div class="grade-box is-official">
-        <span class="grade-box-label">🏆 {{ card.grading_company }} oficial</span>
-        <strong class="grade-box-value">{{ card.official_grade }}</strong>
-        <span class="grade-box-meta">Nota atribuída pela empresa</span>
+    <section class="grade-history" id="historico" aria-labelledby="historyTitle">
+      <div class="section-head">
+        <h2 id="historyTitle">Histórico de avaliações</h2>
+        {% if card.evaluations %}<span class="supporting">{{ card.evaluations|length }} {{ 'avaliação' if card.evaluations|length == 1 else 'avaliações' }}</span>{% endif %}
       </div>
+      {% if card.evaluations %}
+        <ul class="list">
+          {% for e in card.evaluations %}
+          <li>
+            <a class="list-link" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=e.id) }}">
+              <span class="history-date">{{ e.created_at|date_br }}</span>
+              <span class="history-range grade-{{ g.grade_tier(e.estimated_range) }}">Possível faixa PSA {{ g.range_text(e.estimated_range) }}</span>
+              <span class="history-conf">Confiança: {{ g.confidence_text(e.confidence) }}</span>
+              {{ icon('chevron_right') }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-inline">Nenhuma avaliação ainda. Use <strong>Avaliar condição</strong> e envie fotos da frente e do verso para uma estimativa visual.</p>
       {% endif %}
-      {% if latest %}
-      <a class="grade-box is-estimate" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=latest.id) }}">
-        <span class="grade-box-label">🤖 Estimativa IA</span>
-        <strong class="grade-box-value">{{ g.range_text(latest.estimated_range) }}</strong>
-        <span class="grade-box-meta">Possível faixa PSA · confiança {{ g.confidence_text(latest.confidence)|lower }}</span>
-      </a>
-      {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="detail-actions">
-      <a class="btn btn-grade btn-lg" href="{{ url_for('grading.grade_page', card_id=card.id) }}">🔬 Avaliar Card</a>
-      <a class="btn btn-primary" href="{{ url_for('pages.edit_card', card_id=card.id) }}">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Editar
-      </a>
-      <form method="post" action="{{ url_for('pages.delete_card', card_id=card.id) }}" data-confirm="Excluir {{ card.pokemon_name }} da coleção? Esta ação não pode ser desfeita.">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-danger" type="submit">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Excluir
-        </button>
-      </form>
-      <a class="btn btn-text" href="{{ url_for('pages.collection') }}">Voltar</a>
-    </div>
+      <p class="grade-disclaimer">{{ icon('info') }}<span>As avaliações são estimativas visuais por IA, não notas oficiais da PSA.</span></p>
+    </section>
   </div>
 </article>
-
-<section class="section grade-history" id="historico" aria-labelledby="historyTitle">
-  <div class="section-head">
-    <h2 id="historyTitle">🔬 Histórico de avaliações</h2>
-    {% if card.evaluations %}<span class="hint">{{ card.evaluations|length }} {{ 'avaliação' if card.evaluations|length == 1 else 'avaliações' }}</span>{% endif %}
-  </div>
-  {% if card.evaluations %}
-    <ul class="history-list">
-      {% for e in card.evaluations %}
-      <li>
-        <a class="history-item" href="{{ url_for('grading.evaluation_page', card_id=card.id, evaluation_id=e.id) }}">
-          <span class="history-date">{{ e.created_at|date_br }}</span>
-          <span class="history-range grade-{{ g.grade_tier(e.estimated_range) }}">Possível faixa PSA {{ g.range_text(e.estimated_range) }}</span>
-          <span class="history-conf conf-{{ e.confidence }}">Confiança: {{ g.confidence_text(e.confidence) }}</span>
-          <svg class="icon history-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="empty-inline">Nenhuma avaliação ainda. Toque em <strong>🔬 Avaliar Card</strong> e envie fotos da frente e do verso para uma estimativa visual da condição.</p>
-  {% endif %}
-  <p class="grade-disclaimer">As avaliações são estimativas visuais por IA, não notas oficiais da PSA.</p>
-</section>
 
 <dialog class="dialog" data-confirm-dialog aria-labelledby="confirmTitle">
   <form method="dialog" class="dialog-body">
@@ -105,7 +105,7 @@
     <p data-confirm-text></p>
     <div class="dialog-actions">
       <button class="btn btn-text" value="cancel">Cancelar</button>
-      <button class="btn btn-danger" value="ok" data-confirm-ok>Excluir</button>
+      <button class="btn btn-error" value="ok" data-confirm-ok>Excluir</button>
     </div>
   </form>
 </dialog>

@@ -1,35 +1,37 @@
 {% extends 'base.html' %}
+{% from 'partials/_icons.html' import icon %}
 {% set editing = card is not none %}
 {% block title %}{{ 'Editar ' ~ card.pokemon_name if editing else 'Adicionar Card' }}{% endblock %}
 {% macro field_error(name) %}{% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}{% endmacro %}
 {% macro invalid(name) %}{% if errors.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
 {% block content %}
-<header class="page-head">
+{% if editing %}<a class="back-link" href="{{ url_for('pages.card_detail', card_id=card.id) }}">{{ icon('arrow_back') }}{{ card.pokemon_name }}</a>{% endif %}
+<header class="page-header">
   <div>
-    <p class="overline">{{ 'Editar card' if editing else 'Novo card' }}</p>
-    <h1>{{ card.pokemon_name if editing else 'Adicionar Card' }}</h1>
+    <h1>{{ 'Editar card' if editing else 'Adicionar card' }}</h1>
+    <p class="supporting">{{ 'Altere os dados e salve.' if editing else 'Fotografe a carta: a IA preenche os dados para você conferir.' }}</p>
   </div>
 </header>
 
 {% if not ai_enabled and not editing %}
-<div class="ai-banner" role="note">
-  <span class="soon-chip">IA desligada</span>
-  <p><strong>Reconhecimento automático indisponível:</strong> defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor. Enquanto isso, preencha manualmente.</p>
+<div class="banner" role="note">
+  {{ icon('info') }}
+  <p><strong>IA desligada.</strong> Reconhecimento automático indisponível: defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor. Enquanto isso, preencha manualmente.</p>
 </div>
 {% endif %}
 
-{% if errors %}<div class="alert" role="alert">Confira os campos destacados.</div>{% endif %}
+{% if errors %}<div class="alert" role="alert">{{ icon('error', fill=true) }}<span>Confira os campos destacados.</span></div>{% endif %}
 
 <form class="card-form" method="post" enctype="multipart/form-data" novalidate data-card-form
       action="{{ url_for('pages.update_card', card_id=card.id) if editing else url_for('pages.create_card') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <section class="form-panel form-image">
+  <section class="form-section form-image">
     <h2>Imagem da carta</h2>
     <label class="dropzone{% if errors.get('image') %} has-error{% endif %}" data-dropzone>
       <img class="dropzone-preview{% if not (editing and card.image_path) %} is-hidden{% endif %}" data-preview
            src="{{ image_url(card.image_path) if editing and card.image_path else '' }}" alt="Prévia da carta">
       <span class="dropzone-empty{% if editing and card.image_path %} is-hidden{% endif %}" data-preview-empty>
-        <svg class="icon icon-xl" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        {{ icon('photo_camera') }}
         <strong>Tirar foto ou escolher imagem</strong>
         <small>JPG, PNG ou WEBP · até {{ max_image_mb }} MB</small>
       </span>
@@ -42,11 +44,11 @@
     {% if ai_enabled %}
       <div class="ai-panel" data-ai-panel data-ai-url="{{ url_for('api_cards.identify_card') }}" data-ai-auto="{{ '0' if editing else '1' }}">
         <div class="ai-status" data-ai-status role="status" aria-live="polite">
-          <span class="ai-icon" aria-hidden="true">{% include 'partials/_icon_sparkle.html' %}</span>
+          <span class="ai-icon" aria-hidden="true">{{ icon('auto_awesome', fill=true) }}</span>
           <p>{% if editing %}A IA pode completar os campos vazios a partir da imagem da carta.{% else %}Tire ou escolha a foto: a IA identifica a carta e preenche os dados para você conferir.{% endif %}</p>
         </div>
         <button type="button" class="btn btn-ai" data-ai-identify{% if not (editing and card.image_path) %} hidden{% endif %}>
-          {% include 'partials/_icon_sparkle.html' %}<span data-ai-label>Identificar com IA</span>
+          {{ icon('auto_awesome') }}<span data-ai-label>Identificar com IA</span>
         </button>
         <p class="ai-extra-title" data-ai-extra-title hidden>Outras informações da carta</p>
         <dl class="ai-extra" data-ai-extra tabindex="0" aria-label="Outras informações identificadas pela IA" hidden></dl>
@@ -54,7 +56,7 @@
     {% endif %}
   </section>
 
-  <section class="form-panel">
+  <section class="form-section">
     <h2>Dados da carta</h2>
     <div class="field">
       <label for="pokemon_name">Nome do Pokémon <span class="req" aria-hidden="true">*</span></label>
@@ -87,7 +89,7 @@
     </div>
   </section>
 
-  <section class="form-panel">
+  <section class="form-section">
     <h2>Valor</h2>
     <div class="field-row">
       <div class="field">
@@ -111,7 +113,7 @@
     </div>
   </section>
 
-  <section class="form-panel">
+  <section class="form-section">
     <h2>Nota oficial (carta graduada)</h2>
     <p class="hint">Só para cartas já graduadas por uma empresa (ex.: PSA). A estimativa da IA fica separada, no histórico de avaliações.</p>
     <div class="field-row">
@@ -133,8 +135,8 @@
 
   <div class="form-actions">
     <a class="btn btn-text" href="{{ url_for('pages.card_detail', card_id=card.id) if editing else url_for('pages.home') }}">Cancelar</a>
-    <button class="btn btn-primary btn-lg" type="submit" data-submit>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ 'Salvar alterações' if editing else 'Salvar card' }}
+    <button class="btn btn-filled" type="submit" data-submit>
+      {{ icon('check') }}{{ 'Salvar alterações' if editing else 'Salvar card' }}
     </button>
   </div>
 </form>

@@ -1,83 +1,87 @@
 <!doctype html>
+{% from 'partials/_icons.html' import icon %}
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#d62839">
+  <meta name="theme-color" content="#fbf8f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141313" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
   <title>{% block title %}CardDex{% endblock %} · CardDex</title>
   <script>document.documentElement.classList.add("js")</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=14">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/roboto-flex-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20">
 </head>
-<body class="{% block body_class %}{% endblock %}{% if logged_in() and request.endpoint not in ('auth.login', 'auth.login_post') %} has-nav{% endif %}">
-  {% set nav = [
-    ('pages.home', 'Início', 'Início', 'home'),
-    ('scan.scan_page', 'Scan', 'Scan', 'scan'),
-    ('pages.collection', 'Minha Coleção', 'Coleção', 'collection'),
-    ('pages.new_card', 'Adicionar Card', 'Adicionar', 'add'),
-  ] %}
-  {% set current = 'scan.scan_page' if request.endpoint == 'scan.scan_submit' else request.endpoint %}
-  {% set show_nav = logged_in() and current not in ('auth.login', 'auth.login_post') %}
-
+{# Navegação Material 3: barra inferior (celular) ou trilho lateral (a partir de 840 px). "Adicionar" é ação, não destino: vai no FAB. #}
+{% set nav = [
+  ('pages.home', 'Início', 'home'),
+  ('pages.collection', 'Coleção', 'pokeball'),
+  ('scan.scan_page', 'Scan', 'document_scanner'),
+] %}
+{% set current = 'scan.scan_page' if request.endpoint == 'scan.scan_submit' else request.endpoint %}
+{% set show_nav = logged_in() and current not in ('auth.login', 'auth.login_post') %}
+{% set show_fab = show_nav and current == 'pages.collection' %}{# FAB = ação principal da tela; nas outras, o atalho já está no conteúdo #}
+<body class="{% block body_class %}{% endblock %}{% if show_nav %} has-nav{% endif %}{% if show_fab %} has-fab{% endif %}">
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
-  <header class="app-header">
+  {% if show_nav %}
+  <header class="top-bar">
     <a class="brand" href="{{ url_for('pages.home') }}" aria-label="CardDex — início">
-      {% with size=36, uid='h' %}{% include 'partials/_logo.html' %}{% endwith %}
-      <span class="brand-name">Card<span>Dex</span></span>
+      {% with size=32, uid='h' %}{% include 'partials/_logo.html' %}{% endwith %}
+      <span class="brand-name">CardDex</span>
     </a>
-    {% if show_nav and auth_enabled() %}
+    {% if auth_enabled() %}
       <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="header-logout" type="submit"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>Sair</span></button>
+        <button class="icon-btn" type="submit" aria-label="Sair" title="Sair">{{ icon('logout') }}</button>
       </form>
     {% endif %}
   </header>
 
-  {% if show_nav %}
-  <aside class="sidebar" aria-label="Menu">
-    <a class="brand brand-lg" href="{{ url_for('pages.home') }}" aria-label="CardDex — início">
-      {% with size=44, uid='s' %}{% include 'partials/_logo.html' %}{% endwith %}
-      <span class="brand-name">Card<span>Dex</span></span>
+  <nav class="nav-rail" aria-label="Principal">
+    <a class="brand rail-brand" href="{{ url_for('pages.home') }}" aria-label="CardDex — início">
+      {% with size=40, uid='r' %}{% include 'partials/_logo.html' %}{% endwith %}
     </a>
-    <p class="sidebar-tagline">Sua coleção Pokémon TCG</p>
-    <nav class="side-nav" aria-label="Principal">
-      {% for endpoint, label, short, icon in nav %}
-        <a href="{{ url_for(endpoint) }}" class="side-nav-link{% if current == endpoint %} is-active{% endif %}"{% if current == endpoint %} aria-current="page"{% endif %}>
-          {% include 'partials/_icon_' ~ icon ~ '.html' %}<span>{{ label }}</span>
+    <a class="fab rail-fab" href="{{ url_for('pages.new_card') }}" aria-label="Adicionar card" title="Adicionar card">{{ icon('add') }}</a>
+    <div class="rail-items">
+      {% for endpoint, label, name in nav %}
+        {% set active = current == endpoint %}
+        <a href="{{ url_for(endpoint) }}" class="nav-item{% if active %} is-active{% endif %}"{% if active %} aria-current="page"{% endif %}>
+          <span class="nav-indicator">{{ icon(name, fill=active) }}</span><span class="nav-label">{{ label }}</span>
         </a>
       {% endfor %}
-    </nav>
-    <div class="sidebar-foot">
-      <span class="soon-chip">Novo</span>
-      <p>Scan: aponte a câmera para a carta e veja coleção, raridade e o preço na MYP Cards na hora.</p>
     </div>
     {% if auth_enabled() %}
-      <form method="post" action="{{ url_for('auth.logout') }}">
+      <form method="post" action="{{ url_for('auth.logout') }}" class="rail-foot">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="side-nav-link side-logout" type="submit"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg><span>Sair</span></button>
+        <button class="nav-item" type="submit"><span class="nav-indicator">{{ icon('logout') }}</span><span class="nav-label">Sair</span></button>
       </form>
     {% endif %}
-  </aside>
+  </nav>
   {% endif %}
 
   <main id="conteudo" class="page" tabindex="-1">
-    {% include 'partials/_flash.html' %}
     {% block content %}{% endblock %}
   </main>
 
+  {% if show_fab %}
+  <a class="fab page-fab" href="{{ url_for('pages.new_card') }}" aria-label="Adicionar card" title="Adicionar card">{{ icon('add') }}</a>
+  {% endif %}
+
   {% if show_nav %}
-  {# Celular e tablet: menu fixo no rodapé, ao alcance do polegar. No computador vale a barra lateral. #}
-  <nav class="bottom-nav" aria-label="Principal">
-    {% for endpoint, label, short, icon in [nav[0], nav[1], nav[3], nav[2]] %}{# Início, Scan, Adicionar, Coleção #}
-      <a href="{{ url_for(endpoint) }}" class="bottom-nav-link bottom-nav-{{ icon }}{% if current == endpoint %} is-active{% endif %}"{% if current == endpoint %} aria-current="page"{% endif %}>
-        <span class="bottom-nav-icon">{% include 'partials/_icon_' ~ icon ~ '.html' %}</span><span>{{ short }}</span>
+  <nav class="nav-bar" aria-label="Principal">
+    {% for endpoint, label, name in nav %}
+      {% set active = current == endpoint %}
+      <a href="{{ url_for(endpoint) }}" class="nav-item{% if active %} is-active{% endif %}"{% if active %} aria-current="page"{% endif %}>
+        <span class="nav-indicator">{{ icon(name, fill=active) }}</span><span class="nav-label">{{ label }}</span>
       </a>
     {% endfor %}
   </nav>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=10" defer></script>
+  {% include 'partials/_flash.html' %}
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=20" defer></script>
 </body>
 </html>

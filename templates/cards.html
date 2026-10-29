@@ -1,40 +1,42 @@
 {% extends 'base.html' %}
+{% from 'partials/_icons.html' import icon %}
 {% block title %}Minha Coleção{% endblock %}
 {% block content %}
-<header class="page-head">
+<header class="page-header">
   <div>
-    <p class="overline">CardDex</p>
     <h1>Minha Coleção</h1>
+    {% if total %}<p class="supporting">{{ total }} {{ 'card' if total == 1 else 'cards' }} em {{ groups|length }} {{ 'coleção' if groups|length == 1 else 'coleções' }}</p>{% endif %}
   </div>
-  <a class="btn btn-primary hide-mobile" href="{{ url_for('pages.new_card') }}">{% include 'partials/_icon_add.html' %}Adicionar Card</a>
 </header>
 
 {% if total %}
 <form class="filters" method="get" action="{{ url_for('pages.collection') }}" role="search" data-filters>
   <label class="search">
-    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    {{ icon('search') }}
     <input type="search" name="q" value="{{ filters.q }}" placeholder="Buscar por nome ou número" aria-label="Buscar por nome ou número" autocomplete="off">
   </label>
   <div class="filter-row">
-    <label class="select">
+    <label class="select-chip">
       <span class="sr-only">Coleção</span>
       <select name="collection" aria-label="Filtrar por coleção">
-        <option value="">Coleção: todas</option>
+        <option value="">Coleção</option>
         {% for c in options.collections %}<option value="{{ c }}"{% if c == filters.collection %} selected{% endif %}>{{ c }}</option>{% endfor %}
       </select>
+      {{ icon('expand_more') }}
     </label>
-    <label class="select">
+    <label class="select-chip">
       <span class="sr-only">Raridade</span>
       <select name="rarity" aria-label="Filtrar por raridade">
-        <option value="">Raridade: todas</option>
+        <option value="">Raridade</option>
         {% for r in options.rarities %}<option value="{{ r }}"{% if r == filters.rarity %} selected{% endif %}>{{ r }}</option>{% endfor %}
       </select>
+      {{ icon('expand_more') }}
     </label>
     <button class="btn btn-tonal no-js-only" type="submit">Filtrar</button>
     <a class="btn btn-text" href="{{ url_for('pages.collection') }}" data-clear-filters>Limpar</a>
+    <p class="result-count" data-result-count aria-live="polite">{{ cards|length }} de {{ total }} {{ 'card' if total == 1 else 'cards' }}</p>
   </div>
 </form>
-<p class="result-count" data-result-count aria-live="polite">{{ cards|length }} de {{ total }} {{ 'card' if total == 1 else 'cards' }}</p>
 {% endif %}
 
 {# Uma "prateleira" por coleção: título e cartas lado a lado, em ordem de número. #}
@@ -47,8 +49,8 @@
         <p class="shelf-meta"><span data-shelf-count data-total="{{ group.count }}">{{ group.count }} {{ 'card' if group.count == 1 else 'cards' }}</span>{% if group.value %} · {{ group.value|brl }}{% endif %}</p>
       </div>
       <div class="shelf-arrows" data-shelf-arrows hidden>
-        <button class="shelf-arrow" type="button" data-shelf-prev aria-label="Ver cartas anteriores de {{ group.name }}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
-        <button class="shelf-arrow" type="button" data-shelf-next aria-label="Ver próximas cartas de {{ group.name }}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+        <button class="shelf-arrow" type="button" data-shelf-prev aria-label="Ver cartas anteriores de {{ group.name }}">{{ icon('chevron_left') }}</button>
+        <button class="shelf-arrow" type="button" data-shelf-next aria-label="Ver próximas cartas de {{ group.name }}">{{ icon('chevron_right') }}</button>
       </div>
     </header>
     <div class="shelf-track" data-shelf-track>
@@ -59,7 +61,7 @@
 </div>
 
 <div class="empty{% if cards or not total %} is-hidden{% endif %}" data-empty-filter>
-  <div class="empty-icon">{% with size=64, uid='nf' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
+  <div class="empty-icon">{{ icon('search', cls='icon-xl') }}</div>
   <h3>Nenhum card encontrado</h3>
   <p>Tente outro nome ou limpe os filtros.</p>
   <a class="btn btn-tonal" href="{{ url_for('pages.collection') }}" data-clear-filters>Limpar filtros</a>
@@ -67,10 +69,10 @@
 
 {% if not total %}
 <div class="empty">
-  <div class="empty-icon">{% with size=64, uid='e' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
+  <div class="empty-icon">{% with size=56, uid='e' %}{% include 'partials/_logo.html' %}{% endwith %}</div>
   <h3>Nenhum card na coleção</h3>
-  <p>Cadastre sua primeira carta para vê-la aqui.</p>
-  <a class="btn btn-primary" href="{{ url_for('pages.new_card') }}">{% include 'partials/_icon_add.html' %}Adicionar Card</a>
+  <p>Escaneie ou cadastre sua primeira carta para vê-la aqui.</p>
+  <a class="btn btn-filled" href="{{ url_for('pages.new_card') }}">{{ icon('add') }}Adicionar card</a>
 </div>
 {% endif %}
 {% endblock %}

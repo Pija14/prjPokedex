@@ -27,6 +27,14 @@
   };
   const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || "";
 
+  // ---------- Barra superior: muda de tom ao rolar (Material 3) ----------
+  const topBar = document.querySelector(".top-bar");
+  if (topBar) {
+    const onScroll = () => topBar.classList.toggle("is-scrolled", window.scrollY > 4);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
+
   // ---------- Avisos (flash) ----------
   document.querySelectorAll("[data-autohide]").forEach((toast) => {
     setTimeout(() => {
@@ -332,7 +340,7 @@
 
     const showError = (message, issues = [], tips = false) => {
       errorBox.classList.toggle("is-hidden", !message);
-      errorBox.querySelector("[data-grade-error-text]").textContent = message ? `${tips ? "⚠️ " : ""}${message}` : "";
+      errorBox.querySelector("[data-grade-error-text]").textContent = message ? message : "";
       const list = errorBox.querySelector("[data-grade-issues]");
       list.replaceChildren(...issues.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
       list.classList.toggle("is-hidden", issues.length === 0);
@@ -368,7 +376,7 @@
     let timer = null;
     const startProgress = () => {
       progress.classList.remove("is-hidden");
-      steps.forEach((step) => { step.classList.remove("is-done"); step.firstElementChild.textContent = "⏳"; });
+      steps.forEach((step) => { step.classList.remove("is-done"); step.firstElementChild.textContent = "○"; });
       let i = 0;
       timer = setInterval(() => {
         if (i < steps.length - 1) { steps[i].classList.add("is-done"); steps[i].firstElementChild.textContent = "✓"; i += 1; }
@@ -378,7 +386,7 @@
       clearInterval(timer);
       if (done) {
         steps.forEach((step) => { step.classList.add("is-done"); step.firstElementChild.textContent = "✓"; });
-        progress.querySelector(".grade-progress-title").textContent = "✨ Análise concluída!";
+        progress.querySelector(".grade-progress-title").textContent = "Análise concluída!";
       } else {
         progress.classList.add("is-hidden");
       }
@@ -405,7 +413,7 @@
           showError(data.error || "Não foi possível analisar a carta agora.", data.issues || [], Boolean(data.tips));
         } else {
           stopProgress(true);
-          submit.textContent = "✨ Análise concluída!";
+          submit.textContent = "Análise concluída!";
           setTimeout(() => { location.href = data.evaluation.url; }, 700);
           return; // continua bloqueado até abrir o resultado
         }
@@ -415,7 +423,7 @@
       }
       busy = false;
       submit.disabled = false;
-      submit.textContent = "🤖 Analisar card";
+      submit.textContent = "Analisar card";
     });
   }
 

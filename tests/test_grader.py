@@ -301,7 +301,7 @@ def test_nota_oficial_separada_da_estimativa(client, app, gemini):
         c = card_service.get_card(card_id)
         assert (c.grading_company, c.official_grade) == ("PSA", "10")  # a IA nunca altera a nota oficial
     page = client.get(f"/cards/{card_id}").get_data(as_text=True)
-    assert "🏆 PSA oficial" in page and "🤖 Estimativa IA" in page
+    assert "PSA oficial" in page and "Estimativa IA" in page
 
 
 def test_validacao_da_nota_oficial(app):

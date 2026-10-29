@@ -1,18 +1,8 @@
-{# Logo do CardDex: uma pokébola desenhada em SVG próprio. #}
-<svg class="logo-mark" viewBox="0 0 48 48" width="{{ size|default(40) }}" height="{{ size|default(40) }}" aria-hidden="true">
-  <defs>
-    <linearGradient id="lg-top-{{ uid|default('a') }}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ff5a4e"/><stop offset="1" stop-color="#d42030"/>
-    </linearGradient>
-    <linearGradient id="lg-bottom-{{ uid|default('a') }}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e7ee"/>
-    </linearGradient>
-  </defs>
-  <path d="M3 24a21 21 0 0 1 42 0z" fill="url(#lg-top-{{ uid|default('a') }})"/>
-  <path d="M3 24a21 21 0 0 0 42 0z" fill="url(#lg-bottom-{{ uid|default('a') }})"/>
-  <path d="M11 11.5a15.5 15.5 0 0 1 9-5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>
-  <circle cx="24" cy="24" r="21" fill="none" stroke="#1d2433" stroke-width="3"/>
-  <path d="M3 24h42" stroke="#1d2433" stroke-width="3.4"/>
-  <circle cx="24" cy="24" r="7.2" fill="#fff" stroke="#1d2433" stroke-width="3.2"/>
-  <circle cx="24" cy="24" r="3.2" fill="#fff" stroke="#c9cfd9" stroke-width="1.4"/>
+{# Logo do CardDex: pokébola em SVG próprio, plana (Material 3). As cores vêm dos tokens do style.css. #}
+<svg class="logo-mark" viewBox="0 0 48 48" width="{{ size|default(40) }}" height="{{ size|default(40) }}" aria-hidden="true" focusable="false">
+  <path class="logo-top" d="M4 24a20 20 0 0 1 40 0z"/>
+  <path class="logo-bottom" d="M4 24a20 20 0 0 0 40 0z"/>
+  <circle class="logo-line" cx="24" cy="24" r="20" fill="none" stroke-width="3"/>
+  <path class="logo-line" d="M4 24h40" stroke-width="3"/>
+  <circle class="logo-button" cx="24" cy="24" r="6.5" stroke-width="3"/>
 </svg>

@@ -1,26 +1,27 @@
 {% extends 'base.html' %}
+{% from 'partials/_icons.html' import icon %}
 {% block title %}Avaliar {{ card.pokemon_name }}{% endblock %}
 {% block content %}
 <a class="back-link" href="{{ url_for('pages.card_detail', card_id=card.id) }}">
-  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>{{ card.pokemon_name }}
+  {{ icon('arrow_back') }}{{ card.pokemon_name }}
 </a>
 
-<header class="page-head">
+<header class="page-header">
   <div>
-    <p class="overline">Avaliação visual por IA</p>
-    <h1>🔬 Avaliar Card</h1>
+    <h1>Avaliar condição</h1>
+    <p class="supporting">Avaliação visual por IA a partir de fotos da frente e do verso.</p>
   </div>
 </header>
 
 {% if not ai_enabled %}
-<div class="ai-banner" role="note">
-  <span class="soon-chip">IA desligada</span>
-  <p><strong>Avaliação indisponível:</strong> defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor.</p>
+<div class="banner" role="note">
+  {{ icon('info') }}
+  <p><strong>IA desligada.</strong> Avaliação indisponível: defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor.</p>
 </div>
 {% endif %}
 
 <div class="grade-error alert{% if not error %} is-hidden{% endif %}" role="alert" data-grade-error>
-  <p data-grade-error-text>{% if tips %}⚠️ {% endif %}{{ error or '' }}</p>
+  <p data-grade-error-text>{{ error or '' }}</p>
   <ul data-grade-issues{% if not issues %} class="is-hidden"{% endif %}>{% for issue in issues %}<li>{{ issue }}</li>{% endfor %}</ul>
   <div data-grade-tips{% if not tips %} class="is-hidden"{% endif %}>
     <p>Tente tirar uma nova foto:</p>
@@ -34,13 +35,13 @@
 
   <div class="grade-photos">
     {% for side, label in [('front', 'Foto da frente'), ('back', 'Foto do verso')] %}
-    <section class="form-panel grade-photo">
+    <section class="form-section grade-photo">
       <h2>{{ label }}</h2>
       <label class="dropzone grade-dropzone" data-grade-drop="{{ side }}">
         <img class="dropzone-preview is-hidden" data-grade-preview alt="Prévia: {{ label|lower }}">
         <span class="dropzone-empty" data-grade-empty>
-          <svg class="icon icon-xl" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-          <strong>📷 {{ 'Fotografar a frente' if side == 'front' else 'Fotografar o verso' }}</strong>
+          {{ icon('photo_camera') }}
+          <strong>{{ 'Fotografar a frente' if side == 'front' else 'Fotografar o verso' }}</strong>
           <small>ou escolher uma imagem · até {{ max_image_mb }} MB</small>
         </span>
         <input type="file" name="{{ side }}_image" accept="image/jpeg,image/png,image/webp" capture="environment" data-grade-input="{{ side }}">
@@ -50,7 +51,7 @@
     {% endfor %}
   </div>
 
-  <section class="form-panel grade-tips">
+  <section class="form-section grade-tips">
     <h2>Para uma avaliação confiável</h2>
     <ul>
       <li>Boa iluminação, de preferência luz natural e indireta.</li>
@@ -63,19 +64,19 @@
   <p class="grade-missing is-hidden" data-grade-missing role="status">Para realizar uma avaliação mais confiável, envie fotos da frente e do verso da carta.</p>
 
   <div class="grade-progress is-hidden" data-grade-progress role="status" aria-live="polite">
-    <p class="grade-progress-title"><span class="ai-spinner" aria-hidden="true"></span> 🤖 Analisando sua carta…</p>
+    <p class="grade-progress-title"><span class="ai-spinner" aria-hidden="true"></span> Analisando sua carta…</p>
     <p>Verificando:</p>
     <ul>
-      {% for step in ['Centralização', 'Cantos', 'Bordas', 'Superfície'] %}<li data-grade-step><span aria-hidden="true">⏳</span> {{ step }}</li>{% endfor %}
+      {% for step in ['Centralização', 'Cantos', 'Bordas', 'Superfície'] %}<li data-grade-step><span aria-hidden="true">○</span> {{ step }}</li>{% endfor %}
     </ul>
     <p class="hint">Isso pode levar até um minuto.</p>
   </div>
 
   <div class="form-actions">
     <a class="btn btn-text" href="{{ url_for('pages.card_detail', card_id=card.id) }}">Cancelar</a>
-    <button class="btn btn-primary btn-lg" type="submit" data-grade-submit{% if not ai_enabled %} disabled{% endif %}>🤖 Analisar card</button>
+    <button class="btn btn-filled" type="submit" data-grade-submit{% if not ai_enabled %} disabled{% endif %}>Analisar card</button>
   </div>
 </form>
 
-<p class="grade-disclaimer">⚠️ A análise é uma estimativa visual gerada por inteligência artificial a partir das fotos. Ela não representa uma avaliação oficial da PSA e não garante a nota obtida em uma eventual submissão para grading.</p>
+<p class="grade-disclaimer">{{ icon('info') }}<span>A análise é uma estimativa visual gerada por inteligência artificial a partir das fotos. Ela não representa uma avaliação oficial da PSA e não garante a nota obtida em uma eventual submissão para grading.</span></p>
 {% endblock %}

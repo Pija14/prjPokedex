@@ -13,31 +13,31 @@ Você atua como designer de produto sênior. O CardDex deve parecer um **aplicat
 2. Leia os **tokens** no `:root` do `style.css` (`--red`, `--yellow`, `--blue`, `--ink`, `--r-*`, `--shadow-*`, `--space-*`). Evolua o sistema existente; não crie um paralelo.
 3. Contexto de uso: a pessoa está com a carta na mão, fotografando pelo celular, muitas vezes com uma mão. Botões grandes, poucos passos, feedback imediato.
 
-## Identidade visual
+## Identidade visual (Material 3 + universo Pokémon, sem poluir)
 
-- **Paleta:** vermelho (ação principal, header/sidebar estilo "tampa da Pokédex"), amarelo (valor/dinheiro, FAB, destaque), azul (ação secundária, foco, links), branco e tons escuros (`--ink`) para contraste e contornos.
-- **Logo próprio** (`partials/_logo.html`, `static/images/logo.svg`): dispositivo com lente azul e LEDs. Nunca use a Pokébola oficial, o logo "Pokémon" nem artes das cartas como elementos da interface (as imagens das cartas são do usuário, só no conteúdo).
-- **Formas e sombras:** cartões arredondados (`--r-lg`/`--r-xl`), sombras suaves (`--shadow-1..3`), botões "pill" com leve relevo inferior (sensação de botão físico de console).
-- **Badges de raridade** por nível (`rarity_tier`): common (cinza), uncommon (verde), rare (azul), holo (lilás), ultra (dourado), secret (gradiente holográfico animado). Raridade nunca só por cor — o texto sempre aparece.
-- **Microinterações:** elevação no hover, brilho "holo" atravessando o card, LED piscando no hero, entrada suave dos cards. Curtas (150–400 ms, easing `cubic-bezier(.2,0,0,1)`) e desligadas com `prefers-reduced-motion`.
-- **Tipografia:** pilha do sistema (sem fontes externas); títulos com peso alto; números (preço, nº da carta) com `tabular-nums`.
+- **Princípio:** a interface é neutra para as **cartas** brilharem. Cor de marca só onde orienta: ação principal, item ativo da navegação e valor.
+- **Cores (papéis M3 no `:root` do `style.css`, tema claro e escuro automáticos):** `--md-primary` vermelho Pokédex (ação principal, FAB, scan), `--md-tertiary` azul Pokémon (IA, foco, informação), `--md-gold-container` amarelo Pikachu **só para valor/preço**. Superfícies neutras `--md-surface*`. Nunca cores soltas fora dos tokens.
+- **Tipografia:** **Roboto Flex** local (`static/fonts`, licença OFL) com a escala M3 (`--display-*`, `--headline-*`, `--title-*`, `--body-*`, `--label-*`). Nada de outra fonte; números com `tabular-nums`.
+- **Ícones:** só o macro `icon()` de `partials/_icons.html` — Material Symbols Rounded (Apache 2.0) + desenhos próprios no mesmo traço (pokébola). Contorno no estado normal, preenchido no ativo. Sem emojis na interface.
+- **Universo Pokémon com moderação:** logo e item "Coleção" = pokébola própria (genérica, desenhada no projeto); raridade pelos **símbolos impressos nas cartas** (● comum, ◆ incomum, ★ rara; brilho nas especiais) via `rarity_icon(tier)`; avaliação = insígnia (como as de ginásio); obturador do Scan = botão redondo da Pokédex. Nunca o logo "Pokémon" nem artes oficiais na interface (as imagens de cartas são conteúdo).
+- **Formas e elevação:** `--shape-xs..xl` (campos 4px, chips 8px, cards 12–16px, painéis 28px, botões pill); elevação só em FAB, cartas e menus (`--elev-1..3`).
+- **Movimento:** easing emphasized `--ease`, 150–300 ms; brilho holo e inclinação 3D só na arte das cartas; tudo desligado com `prefers-reduced-motion`.
 
 ## Fundamentos M3 aplicados
 
-- **Hierarquia por papel de cor:** uma ação primária por tela (filled vermelho), secundária (azul), tonal (azul claro), text, danger (vermelho claro → sólido no hover).
-- **Estados:** hover, focus (`:focus-visible` com anel azul de 3px), pressed, disabled, carregando ("Salvando…"), vazio, erro — todos desenhados.
-- **Layout por classe de janela:** compacta (< 600) é o alvo principal; margem lateral 16px; alvos ≥ 48px. Breakpoints do projeto: 480 (cards viram "carta" em 2 colunas), 768 (3 colunas, formulário em 2 colunas, detalhes lado a lado), 1024 (sidebar fixa, sem header nem FAB), 1280 (4 colunas).
-- **Superfícies:** fundo `--bg` claro com gradientes sutis; conteúdo em superfícies brancas; sombra só onde há sobreposição ou destaque.
-- **Contraste WCAG AA:** 4.5:1 texto, 3:1 componentes. Atenção ao amarelo: texto escuro sobre amarelo, nunca branco.
+- **Navegação por classe de janela:** < 840px → barra superior + **barra de navegação** inferior (Início, Coleção, Scan); ≥ 840px → **trilho de navegação** (96px) com o FAB no topo. "Adicionar" é ação, não destino: FAB (na Coleção) e atalhos no conteúdo.
+- **Hierarquia de botões:** uma ação `btn-filled` por tela; `btn-tonal` para a secundária; `btn-outlined`/`btn-text` para as demais; `btn-danger` (texto vermelho) para destrutivas, confirmadas em `<dialog>` com `btn-error`.
+- **Estados:** camada de estado M3 (hover 8%, toque 12%) via `::before`; foco com anel azul 3px; disabled 38%; carregando com spinner; vazio e erro desenhados.
+- **Layout:** margens 16px (celular), 24px (≥ 600), 32px (≥ 840); conteúdo até 1200px; alvos ≥ 48px.
+- **Contraste WCAG AA** nos dois temas; texto escuro sobre o amarelo do valor.
 
 ## Componentes do CardDex
 
-- **Card de carta** (`partials/_card_tile.html`): no celular, horizontal (imagem 96px + dados, raridade junto aos dados); a partir de 480px, formato "carta" (proporção 63:88) com badge sobre a imagem. Mostra imagem (ou placeholder com o logo), nome, coleção, raridade, número e valor (pílula amarela; "Sem valor" neutro).
-- **Busca e filtros:** busca "pill" + selects de coleção e raridade, contador "N de M cards", "Limpar", estado vazio específico de "nenhum resultado".
-- **Formulário:** painéis (Imagem, Dados, Valor), dropzone grande com prévia (abre a câmera no celular), campos 52px com label sempre visível, erro abaixo do campo, barra de ações fixa no rodapé no celular.
-- **Detalhes:** arte grande com moldura na cor do nível de raridade, painel de valor amarelo em destaque, lista de informações, ações Editar / Excluir (com `<dialog>`) / Voltar.
-- **Feedback:** toasts (flash) que somem sozinhos; diálogo de confirmação para exclusão.
-- **Reconhecimento por foto (implementado):** painel da IA no formulário — foto → "Analisando a carta…" (spinner) → campos preenchidos com selo **IA**, resumo e detalhes extras; confiança baixa vira aviso amarelo; erro/cota/"não é carta" em vermelho, sempre oferecendo o cadastro manual. Nunca sobrescreve o que a pessoa digitou.
+- **Card de carta** (`_card_tile.html`): arte 63:88 com cantos 12px e elevação, nome (`title-medium`), símbolo de raridade + número (+ coleção na Início), preço. Sem selos sobre a arte.
+- **Coleção:** barra de busca M3 (pill, 56px), filtros como chips de seleção, prateleiras por coleção com rolagem horizontal.
+- **Formulários:** seções com contorno; campos **outlined** M3 (56px, label na borda, erro abaixo); barra de ações fixa no rodapé.
+- **Detalhes e Scan:** arte grande com brilho na cor da raridade; cabeçalho (overline coleção · número, `headline-large`, chips); cartão de valor dourado; ações; lista de informações.
+- **Feedback:** snackbar (inverse surface) para os avisos; banner para IA desligada; `note` para avisos discretos.
 
 ## Como entregar
 

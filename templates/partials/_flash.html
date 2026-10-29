@@ -1,8 +1,9 @@
+{% from 'partials/_icons.html' import icon %}
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div class="toasts" role="status" aria-live="polite">
       {% for category, message in messages %}
-        <div class="toast toast-{{ category }}" data-autohide>{{ message }}</div>
+        <div class="toast toast-{{ category }}" data-autohide>{{ icon('error' if category == 'error' else 'check_circle', fill=true) }}<span>{{ message }}</span></div>
       {% endfor %}
     </div>
   {% endif %}

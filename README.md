@@ -51,7 +51,8 @@ prjPokedex/
 │   └── card_grader_service.py # avaliação da condição: qualidade da foto, prompt, validação, histórico
 ├── templates/              # base, index, cards, card_form, card_detail, grade_form, grade_result, partials/, errors/
 ├── static/
-│   ├── css/style.css       # identidade visual (mobile-first)
+│   ├── css/style.css       # Material 3: tokens (cor, tipografia, forma) e componentes (mobile-first)
+│   ├── fonts/              # Roboto Flex (licença OFL em OFL.txt)
 │   ├── js/app.js           # busca/filtro instantâneos, prévia da imagem, confirmação de exclusão
 │   └── images/             # logo.svg e cards/ (uploads das cartas)
 ├── data/                   # carddex.db é criado aqui na primeira execução
@@ -145,7 +146,7 @@ pytest
 
   Erros de validação: `400 {"errors": {"campo": "mensagem"}}`; não encontrado: `404 {"error": "..."}`.
 
-- **Responsivo**, priorizando o celular: header + cards em uma coluna no celular; sidebar e grade de 3–4 colunas no desktop.
+- **Interface Material Design 3**, priorizando o celular: barra de navegação inferior no celular e trilho lateral a partir de 840 px; fonte Roboto Flex e ícones Material Symbols servidos localmente; tema claro e escuro automáticos.
 
 ## Banco de dados e imagens fora do git
 

@@ -1,4 +1,5 @@
 {# Vitrine do Scan: usada na página (sem JS) e no fragmento que o JS insere. Nada aqui é salvo. #}
+{% from 'partials/_icons.html' import icon, rarity_icon %}
 {% set c = result.card %}
 {% set p = result.price %}
 {% set official = result.images.official %}
@@ -14,23 +15,25 @@
     </div>
   </div>
 
-  <div class="showcase-body">
-    <p class="overline">{{ c.collection_name or 'Coleção não identificada' }}{% if c.card_number %} · #{{ c.card_number }}{% endif %}</p>
-    <h2 class="detail-name">{{ c.pokemon_name }}</h2>
-    <div class="showcase-tags">
-      {% if c.rarity %}<span class="rarity-badge tier-{{ result.tier }} is-static">{{ c.rarity }}</span>{% endif %}
-      {% if c.collection_source in ('catalogo', 'codigo') %}
-        <span class="source-chip is-ok">✓ Conferida no catálogo oficial</span>
-      {% else %}
-        <span class="source-chip is-warn">Coleção sugerida pela IA: confira</span>
-      {% endif %}
-    </div>
+  <div class="detail-body">
+    <header class="detail-head">
+      <p class="overline">{{ c.collection_name or 'Coleção não identificada' }}{% if c.card_number %} · {{ c.card_number }}{% endif %}</p>
+      <h2 class="detail-name">{{ c.pokemon_name }}</h2>
+      <div class="chips">
+        {% if c.rarity %}<span class="chip rarity-chip tier-{{ result.tier }}">{{ rarity_icon(result.tier) }}{{ c.rarity }}</span>{% endif %}
+        {% if c.collection_source in ('catalogo', 'codigo') %}
+          <span class="chip chip-ok">{{ icon('verified', fill=true) }}Conferida no catálogo</span>
+        {% else %}
+          <span class="chip chip-warn">{{ icon('warning', fill=true) }}Coleção sugerida pela IA</span>
+        {% endif %}
+      </div>
+    </header>
     {% if c.confidence is not none and c.confidence < 0.7 %}
-      <p class="showcase-note">⚠️ A IA ficou em dúvida nesta leitura. Confira nome, número e coleção na carta.</p>
+      <p class="note">{{ icon('info') }}<span>A IA ficou em dúvida nesta leitura. Confira nome, número e coleção na carta.</span></p>
     {% endif %}
 
-    {% set ext_icon %}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg><span class="visually-hidden">(abre em nova aba)</span>{% endset %}
-    <div class="price-panel scan-price">
+    {% set ext_icon %}<span class="visually-hidden">(abre em nova aba)</span>{{ icon('open_in_new') }}{% endset %}
+    <div class="price-card">
       {% if p.source == 'myp' %}
         {% set m = p.myp %}
         <span class="price-label">Preço no Brasil</span>
@@ -38,10 +41,10 @@
         <span class="price-meta">MYP Cards · {{ p.main.label }} dos anúncios</span>
         <dl class="price-more">
           {% if m.average and m.lowest %}<div><dt>Menor preço</dt><dd>{{ m.lowest|brl }}</dd></div>{% endif %}
-          {% if m.last_sold %}<div><dt>Último vendido{% if m.last_sold_detail %} <small>({{ m.last_sold_detail }})</small>{% endif %}</dt><dd>{{ m.last_sold|brl }}</dd></div>{% endif %}
+          {% if m.last_sold %}<div><dt>Último vendido{% if m.last_sold_detail %}<small>{{ m.last_sold_detail }}</small>{% endif %}</dt><dd>{{ m.last_sold|brl }}</dd></div>{% endif %}
         </dl>
         <span class="price-meta">{{ m.title }}{% if m.set_name %} · {{ m.set_name }}{% endif %}</span>
-        <a class="btn liga-btn" href="{{ m.url }}" target="_blank" rel="noopener noreferrer">Ver ofertas na MYP Cards {{ ext_icon }}</a>
+        <a class="btn" href="{{ m.url }}" target="_blank" rel="noopener noreferrer">Ver ofertas na MYP Cards{{ ext_icon }}</a>
       {% else %}
         <span class="price-label">{{ 'Valor de referência' if p.main else 'Valor' }}</span>
         {% if p.main %}
@@ -59,9 +62,14 @@
           <span class="price-meta">{{ 'Cotação do dólar indisponível no momento. Tente de novo em instantes.' if p.missing == 'sem_cotacao' else 'Carta não encontrada na MYP Cards nem no catálogo internacional.' }}</span>
         {% endif %}
         {% if p.liga_url %}
-        <a class="btn liga-btn" href="{{ p.liga_url }}" target="_blank" rel="noopener noreferrer">Ver na Liga Pokémon (R$) {{ ext_icon }}</a>
+        <a class="btn" href="{{ p.liga_url }}" target="_blank" rel="noopener noreferrer">Ver na Liga Pokémon (R$){{ ext_icon }}</a>
         {% endif %}
       {% endif %}
+    </div>
+
+    <div class="detail-actions">
+      <a class="btn btn-filled" href="{{ url_for('scan.scan_page') }}" data-scan-again>{{ icon('document_scanner') }}Escanear outra</a>
+      <a class="btn btn-tonal" href="{{ result.add_url }}">{{ icon('add') }}Cadastrar na coleção</a>
     </div>
 
     <dl class="info-list">
@@ -75,13 +83,5 @@
       {% if extra.illustrator %}<div><dt>Ilustrador</dt><dd>{{ extra.illustrator }}</dd></div>{% endif %}
     </dl>
 
-    <div class="showcase-actions">
-      <a class="btn btn-primary btn-lg" href="{{ url_for('scan.scan_page') }}" data-scan-again>
-        {% include 'partials/_icon_scan.html' %}Escanear outra
-      </a>
-      <a class="btn btn-tonal" href="{{ result.add_url }}">
-        {% include 'partials/_icon_add.html' %}Cadastrar na coleção
-      </a>
-    </div>
   </div>
 </article>
