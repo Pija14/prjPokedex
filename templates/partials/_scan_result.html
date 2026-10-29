@@ -1,0 +1,81 @@
+{# Vitrine do Scan: usada na página (sem JS) e no fragmento que o JS insere. Nada aqui é salvo. #}
+{% set c = result.card %}
+{% set p = result.price %}
+{% set official = result.images.official %}
+{% set extra = c.extra or {} %}
+<article class="showcase tier-{{ result.tier }}" data-showcase>
+  <div class="showcase-art">
+    <div class="showcase-card" data-tilt>
+      <img src="{{ result.images.photo }}" alt="Sua foto da carta {{ c.pokemon_name }}" data-view="photo">
+      {% if official %}<img src="{{ official }}" alt="Imagem oficial da carta {{ c.pokemon_name }}" data-view="official" hidden>{% endif %}
+      <span class="showcase-sheen" aria-hidden="true"></span>
+    </div>
+    {% if official %}
+    <div class="segmented" role="group" aria-label="Imagem exibida">
+      <button type="button" aria-pressed="true" data-view-btn="photo">Sua foto</button>
+      <button type="button" aria-pressed="false" data-view-btn="official">Oficial</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="showcase-body">
+    <p class="overline">{{ c.collection_name or 'Coleção não identificada' }}{% if c.card_number %} · #{{ c.card_number }}{% endif %}</p>
+    <h2 class="detail-name">{{ c.pokemon_name }}</h2>
+    <div class="showcase-tags">
+      {% if c.rarity %}<span class="rarity-badge tier-{{ result.tier }} is-static">{{ c.rarity }}</span>{% endif %}
+      {% if c.collection_source in ('catalogo', 'codigo') %}
+        <span class="source-chip is-ok">✓ Conferida no catálogo oficial</span>
+      {% else %}
+        <span class="source-chip is-warn">Coleção sugerida pela IA: confira</span>
+      {% endif %}
+    </div>
+    {% if c.confidence is not none and c.confidence < 0.7 %}
+      <p class="showcase-note">⚠️ A IA ficou em dúvida nesta leitura. Confira nome, número e coleção na carta.</p>
+    {% endif %}
+
+    <div class="price-panel scan-price">
+      <span class="price-label">{{ 'Valor de referência' if p.main else 'Valor' }}</span>
+      {% if p.main %}
+        <strong class="price-value">{{ p.main.value|money(p.main.currency) }}</strong>
+        <span class="price-meta">{{ p.main.source }} · {{ p.main.label }}{% if p.updated_at %} · atualizado em {{ p.updated_at }}{% endif %}</span>
+        {% if p.variants or p.cardmarket %}
+        <dl class="price-more">
+          {% for v in p.variants or [] %}<div><dt>TCGplayer · {{ v.label }}</dt><dd>{{ v.value|money(v.currency) }}</dd></div>{% endfor %}
+          {% if p.cardmarket %}<div><dt>Cardmarket · média de venda</dt><dd>{{ (p.cardmarket.average or p.cardmarket.trend)|money('EUR') }}</dd></div>{% endif %}
+        </dl>
+        {% endif %}
+        <span class="price-meta">Preço internacional (cotação lá fora), não o valor no Brasil.</span>
+      {% else %}
+        <strong class="price-value is-empty">Sem preço de referência</strong>
+        <span class="price-meta">O catálogo internacional não tem preço para esta carta.</span>
+      {% endif %}
+      {% if p.liga_url %}
+      <a class="btn liga-btn" href="{{ p.liga_url }}" target="_blank" rel="noopener noreferrer">
+        Ver na Liga Pokémon (R$)
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        <span class="visually-hidden">(abre em nova aba)</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <dl class="info-list">
+      <div><dt>Coleção</dt><dd>{{ c.collection_name or '—' }}</dd></div>
+      {% if c.catalog and c.catalog.set_name and c.catalog.set_name != c.collection_name %}<div><dt>Coleção (em inglês)</dt><dd>{{ c.catalog.set_name }}</dd></div>{% endif %}
+      <div><dt>Número</dt><dd>{{ c.card_number or '—' }}</dd></div>
+      <div><dt>Raridade</dt><dd>{{ c.rarity or '—' }}</dd></div>
+      <div><dt>Idioma</dt><dd>{{ c.language or '—' }}</dd></div>
+      {% if extra.hp %}<div><dt>HP</dt><dd>{{ extra.hp }}</dd></div>{% endif %}
+      {% if extra.types %}<div><dt>Tipo</dt><dd>{{ extra.types|join(', ') if extra.types is not string else extra.types }}</dd></div>{% endif %}
+      {% if extra.illustrator %}<div><dt>Ilustrador</dt><dd>{{ extra.illustrator }}</dd></div>{% endif %}
+    </dl>
+
+    <div class="showcase-actions">
+      <a class="btn btn-primary btn-lg" href="{{ url_for('scan.scan_page') }}" data-scan-again>
+        {% include 'partials/_icon_scan.html' %}Escanear outra
+      </a>
+      <a class="btn btn-tonal" href="{{ result.add_url }}">
+        {% include 'partials/_icon_add.html' %}Cadastrar na coleção
+      </a>
+    </div>
+  </div>
+</article>

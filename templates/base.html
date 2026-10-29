@@ -8,15 +8,16 @@
   <script>document.documentElement.classList.add("js")</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=11">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=12">
 </head>
 <body class="{% block body_class %}{% endblock %}{% if logged_in() and request.endpoint not in ('auth.login', 'auth.login_post') %} has-nav{% endif %}">
   {% set nav = [
     ('pages.home', 'Início', 'Início', 'home'),
+    ('scan.scan_page', 'Scan', 'Scan', 'scan'),
     ('pages.collection', 'Minha Coleção', 'Coleção', 'collection'),
     ('pages.new_card', 'Adicionar Card', 'Adicionar', 'add'),
   ] %}
-  {% set current = request.endpoint %}
+  {% set current = 'scan.scan_page' if request.endpoint == 'scan.scan_submit' else request.endpoint %}
   {% set show_nav = logged_in() and current not in ('auth.login', 'auth.login_post') %}
 
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -50,7 +51,7 @@
     </nav>
     <div class="sidebar-foot">
       <span class="soon-chip">Novo</span>
-      <p>Fotografe a carta: a IA identifica nome, coleção, número e raridade. Consulta de preço: em breve.</p>
+      <p>Scan: aponte a câmera para a carta e veja coleção, raridade e valor de referência na hora.</p>
     </div>
     {% if auth_enabled() %}
       <form method="post" action="{{ url_for('auth.logout') }}">
@@ -69,7 +70,7 @@
   {% if show_nav %}
   {# Celular e tablet: menu fixo no rodapé, ao alcance do polegar. No computador vale a barra lateral. #}
   <nav class="bottom-nav" aria-label="Principal">
-    {% for endpoint, label, short, icon in [nav[0], nav[2], nav[1]] %}{# Adicionar no centro #}
+    {% for endpoint, label, short, icon in [nav[0], nav[1], nav[3], nav[2]] %}{# Início, Scan, Adicionar, Coleção #}
       <a href="{{ url_for(endpoint) }}" class="bottom-nav-link bottom-nav-{{ icon }}{% if current == endpoint %} is-active{% endif %}"{% if current == endpoint %} aria-current="page"{% endif %}>
         <span class="bottom-nav-icon">{% include 'partials/_icon_' ~ icon ~ '.html' %}</span><span>{{ short }}</span>
       </a>
@@ -77,6 +78,6 @@
   </nav>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=8" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=9" defer></script>
 </body>
 </html>

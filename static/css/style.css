@@ -548,6 +548,127 @@ code { padding: 1px 5px; border-radius: 6px; background: rgba(22, 27, 38, .07); 
 .logout-form { display: contents; }
 .side-logout { width: 100%; border: 0; background: transparent; cursor: pointer; font: inherit; }
 
+/* ---------- Scan: câmera → IA → vitrine (nada é salvo) ---------- */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.scan { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+.scan[data-state="result"] .scan-stage { display: none; }
+.scan-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-4); }
+.scan-viewfinder {
+  position: relative; overflow: hidden; width: min(100%, 420px, 46vh); aspect-ratio: 3 / 4;
+  border-radius: var(--r-xl); background: radial-gradient(circle at 50% 30%, #2c3446, #10141d 70%);
+  box-shadow: 0 0 0 4px var(--ink), var(--shadow-3);
+}
+.scan-video, .scan-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scan-video[hidden], .scan-still[hidden], .scan-placeholder[hidden], .scan-hint[hidden] { display: none; }
+.scan-placeholder {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--space-3);
+  padding: 0 22%; color: rgba(255, 255, 255, .85); font-size: 14px; font-weight: 700; text-align: center;
+}
+.scan-placeholder .icon { width: 44px; height: 44px; color: var(--yellow); }
+/* Moldura no formato da carta (63:88); a sombra gigante escurece o que está fora dela. */
+.scan-frame {
+  position: absolute; left: 50%; top: 50%; width: 74%; aspect-ratio: 63 / 88; transform: translate(-50%, -50%);
+  border-radius: 14px; box-shadow: 0 0 0 100vmax rgba(8, 10, 16, .42); pointer-events: none;
+}
+.scan-frame i { position: absolute; width: 30px; height: 30px; border: 4px solid var(--yellow); animation: corner 2.4s var(--ease) infinite; }
+.scan-frame i:nth-child(1) { left: -4px; top: -4px; border-right: 0; border-bottom: 0; border-top-left-radius: 16px; }
+.scan-frame i:nth-child(2) { right: -4px; top: -4px; border-left: 0; border-bottom: 0; border-top-right-radius: 16px; }
+.scan-frame i:nth-child(3) { left: -4px; bottom: -4px; border-right: 0; border-top: 0; border-bottom-left-radius: 16px; }
+.scan-frame i:nth-child(4) { right: -4px; bottom: -4px; border-left: 0; border-top: 0; border-bottom-right-radius: 16px; }
+.scan-beam {
+  position: absolute; left: 4%; right: 4%; top: 2%; height: 3px; border-radius: 3px; opacity: 0;
+  background: linear-gradient(90deg, transparent, #ff5a6b, transparent); box-shadow: 0 0 14px 3px rgba(214, 40, 57, .7);
+}
+.scan.is-live .scan-beam { opacity: 1; animation: scan-beam 2.4s ease-in-out infinite alternate; }
+.scan[data-state="analyzing"] .scan-beam { opacity: 1; animation: scan-beam .9s ease-in-out infinite alternate; }
+.scan[data-state="analyzing"] .scan-frame i { border-color: #6ea8ff; }
+.scan-hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); padding: 6px 14px;
+  border-radius: var(--r-full); background: rgba(0, 0, 0, .6); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.scan-status { width: min(100%, 420px); padding: var(--space-3) var(--space-4); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-1); }
+.scan-status[hidden] { display: none; }
+.scan-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-4); width: min(100%, 420px); }
+.scan[data-state="analyzing"] .scan-controls { opacity: .45; pointer-events: none; }
+.scan-pick { position: relative; overflow: hidden; }
+.scan-pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.scan-pick:focus-within { outline: 3px solid var(--blue); outline-offset: 2px; }
+.scan-camera { flex: 1; }
+.scan-camera[hidden] { display: none; }
+/* Obturador: o grande botão vermelho da Pokédex */
+.scan-shutter {
+  flex: none; display: grid; place-items: center; width: 76px; height: 76px; padding: 0; border: 5px solid var(--surface); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff7a86, var(--red) 45%, var(--red-strong)); cursor: pointer;
+  box-shadow: 0 0 0 3px var(--ink), 0 6px 0 3px var(--red-deep), var(--shadow-2);
+  transition: transform .12s var(--ease), box-shadow .12s var(--ease);
+}
+.scan-shutter[hidden] { display: none; }
+.scan-shutter span { width: 28px; height: 28px; border: 3px solid rgba(255, 255, 255, .9); border-radius: 50%; }
+.scan-shutter:active { transform: translateY(4px); box-shadow: 0 0 0 3px var(--ink), 0 2px 0 3px var(--red-deep); }
+.scan-shutter:focus-visible { outline: 3px solid var(--blue); outline-offset: 6px; }
+.scan-result:focus { outline: none; }
+
+/* Vitrine: carta com moldura do nível de raridade, brilho holo e inclinação 3D */
+.showcase { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); animation: rise .35s var(--ease) both; }
+.showcase-art { display: grid; justify-items: center; gap: var(--space-4); }
+.showcase-card {
+  --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 30%;
+  position: relative; width: min(100%, 340px); aspect-ratio: 63 / 88; padding: 8px; border-radius: 20px;
+  background: linear-gradient(150deg, var(--tier, #c7ceda), #fff 55%, var(--tier, #c7ceda));
+  box-shadow: 0 0 0 3px var(--ink), var(--shadow-3);
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .45s var(--ease); animation: showcase-in .7s var(--ease) both; touch-action: pan-y;
+}
+.showcase-card.is-tilting { transition: transform .08s linear; }
+.showcase-card img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 13px; background: #e9edf5; }
+.showcase-card img[hidden] { display: none; }
+.showcase-sheen {
+  position: absolute; inset: 8px; border-radius: 13px; pointer-events: none;
+  background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .5), transparent 42%);
+  mix-blend-mode: soft-light;
+}
+.tier-holo .showcase-sheen, .tier-ultra .showcase-sheen, .tier-secret .showcase-sheen {
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .55), transparent 40%),
+    linear-gradient(115deg, rgba(255, 90, 180, .28), rgba(255, 226, 90, .28), rgba(90, 240, 180, .28), rgba(90, 170, 255, .28), rgba(200, 120, 255, .28));
+  background-size: 100% 100%, 300% 300%; background-position: center, var(--mx) var(--my);
+  mix-blend-mode: overlay;
+}
+.segmented { display: inline-flex; gap: 2px; padding: 4px; border-radius: var(--r-full); background: var(--surface); box-shadow: var(--shadow-1); }
+.segmented button {
+  min-height: 44px; padding: 0 var(--space-5); border: 0; border-radius: var(--r-full); background: transparent;
+  color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: background .2s var(--ease), color .2s var(--ease);
+}
+.segmented button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.segmented button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.showcase-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
+.showcase-tags .rarity-badge.is-static { margin-top: 0; }
+.source-chip { padding: 4px 12px; border-radius: var(--r-full); font-size: 12px; font-weight: 800; }
+.source-chip.is-ok { background: #dcf5e6; color: #14502e; }
+.source-chip.is-warn { background: var(--yellow-soft); color: #6b4d00; }
+.showcase-note { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--r-md); background: var(--yellow-soft); color: #6b4d00; font-size: 14px; font-weight: 700; }
+.scan-price .price-value.is-empty { font-size: 22px; }
+.price-more { display: grid; gap: 2px; margin: var(--space-2) 0 var(--space-1); padding-top: var(--space-2); border-top: 1px solid rgba(61, 44, 0, .2); font-size: 14px; }
+.price-more > div { display: flex; justify-content: space-between; gap: var(--space-3); }
+.price-more dt { font-weight: 600; }
+.price-more dd { margin: 0; font-weight: 900; font-variant-numeric: tabular-nums; }
+.liga-btn { margin-top: var(--space-3); background: var(--ink); color: #fff; box-shadow: 0 3px 0 #000; }
+.liga-btn:hover { filter: brightness(1.25); }
+.liga-btn:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.showcase-actions { display: grid; gap: var(--space-2); margin-top: var(--space-5); }
+@keyframes scan-beam { to { top: 96%; } }
+@keyframes corner { 50% { transform: scale(1.08); } }
+@keyframes showcase-in { from { opacity: 0; transform: perspective(900px) rotateY(-28deg) scale(.9); } }
+@media (min-width: 768px) {
+  .showcase { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-items: start; gap: var(--space-8); }
+  .showcase-art { position: sticky; top: calc(var(--header-h) + 16px); }
+  .showcase-actions { display: flex; flex-wrap: wrap; }
+  .scan-viewfinder { width: min(100%, 440px, 60vh); }
+}
+@media (min-width: 1024px) {
+  .showcase-art { top: var(--space-8); }
+}
+
 /* ---------- Animações ---------- */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes holo { to { background-position: 300% 0; } }

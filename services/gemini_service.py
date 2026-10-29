@@ -36,7 +36,7 @@ PROMPT = """You identify Pokémon Trading Card Game (TCG) cards from a photo. Re
   "rarity": "one of: Common, Uncommon, Rare, Holo Rare, Reverse Holo, Double Rare, Ultra Rare, Illustration Rare, Special Illustration Rare, Hyper Rare, Secret Rare, Promo, or null",
   "language": "card language in Brazilian Portuguese (Português, Inglês, Japonês, Espanhol, Francês, Alemão, Italiano, Coreano, Chinês)",
   "confidence": 0.0,
-  "extra": {"hp": "", "types": [], "stage": "", "set_code": "", "regulation_mark": "", "illustrator": "", "year": "", "card_type": "Pokémon | Treinador | Energia", "edition": "", "notes": ""}
+  "extra": {"hp": "", "types": [], "stage": "", "set_code": "", "regulation_mark": "", "illustrator": "", "year": "", "card_type": "Pokémon | Treinador | Energia", "edition": "", "notes": "", "card_box": [0, 0, 1000, 1000]}
 }
 Rules:
 - The set is identified from what is PRINTED at the bottom of the card: the collector number with the set total (e.g. 006/165) and the set code printed next to it (extra.set_code, e.g. MEW, PAL, SVI, CRZ, BRS; usually 2-4 capital letters). Transcribe both exactly, character by character. Leave extra.set_code "" if no code is printed (older cards show only a set symbol).
@@ -45,6 +45,7 @@ Rules:
 - extra.types and extra.stage in Brazilian Portuguese (Fogo, Água, Planta, Elétrico, Psíquico, Lutador, Escuridão, Metal, Fada, Dragão, Incolor; Básico, Estágio 1, Estágio 2). extra.notes: at most one short sentence in Brazilian Portuguese, only with useful visible details (e.g. damage, signature, stamp); otherwise "".
 - Rarity comes from the rarity symbol near the card number: ● Common, ◆ Uncommon, ★ Rare; ★ with holographic artwork = Holo Rare; two black stars = Double Rare; two silver stars = Ultra Rare; one gold star = Illustration Rare; two gold stars = Special Illustration Rare; three gold stars = Hyper Rare; number above the set total (e.g. 110/102) = Secret Rare; promo stamp = Promo.
 - For Trainer or Energy cards, put the card name in pokemon_name and set extra.card_type accordingly.
+- extra.card_box: bounding box of the whole card in the photo as [ymin, xmin, ymax, xmax], integers normalized 0-1000.
 - confidence: 0 to 1, how sure you are about name, set and number together.
 - If the image is not a Pokémon TCG card, return {"is_pokemon_card": false, "reason": "short reason in Brazilian Portuguese"}."""
 

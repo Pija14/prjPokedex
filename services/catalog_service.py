@@ -34,9 +34,28 @@ class CatalogMatch:
     rarity: str | None = None  # em inglês, como no catálogo
     card_id: str | None = None
     matched_by: str = ""  # "carta" (confirmada no catálogo) | "set" (só o set, pelo código/total)
+    image_small: str | None = None  # arte oficial (só quando a carta foi confirmada)
+    image_large: str | None = None
+    ref_prices: dict | None = None  # TCGplayer (US$) e Cardmarket (€), ver _ref_prices
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+def _ref_prices(card: dict) -> dict | None:
+    """Preços internacionais que o catálogo traz junto da carta: referência, não o preço no Brasil."""
+    prices = {}
+    tcgplayer = card.get("tcgplayer") or {}
+    variants = {name: p.get("market") or p.get("mid") for name, p in (tcgplayer.get("prices") or {}).items()
+                if isinstance(p, dict) and (p.get("market") or p.get("mid"))}
+    if variants:
+        prices["tcgplayer"] = {"currency": "USD", "variants": variants, "updated_at": tcgplayer.get("updatedAt")}
+    cardmarket = card.get("cardmarket") or {}
+    cm = cardmarket.get("prices") or {}
+    if cm.get("trendPrice") or cm.get("averageSellPrice"):
+        prices["cardmarket"] = {"currency": "EUR", "trend": cm.get("trendPrice") or None,
+                                "average": cm.get("averageSellPrice") or None, "updated_at": cardmarket.get("updatedAt")}
+    return prices or None
 
 
 def _get(path: str, params: dict) -> dict | None:
@@ -130,10 +149,13 @@ def find_sets(set_code: str | None, printed_total: int | None, name_hint: str | 
 
 
 def _match_from(set_data: dict, card: dict | None, matched_by: str) -> CatalogMatch:
+    card = card or {}
+    images = card.get("images") or {}
     return CatalogMatch(
         set_id=set_data["id"], set_name=set_data["name"], set_code=set_data.get("ptcgoCode"),
         printed_total=set_data.get("printedTotal"), release_date=set_data.get("releaseDate"),
-        rarity=(card or {}).get("rarity"), card_id=(card or {}).get("id"), matched_by=matched_by,
+        rarity=card.get("rarity"), card_id=card.get("id"), matched_by=matched_by,
+        image_small=images.get("small"), image_large=images.get("large"), ref_prices=_ref_prices(card),
     )
 
 
@@ -150,7 +172,8 @@ def resolve(pokemon_name: str | None, card_number: str | None, set_code: str | N
         query = f'name:"{base_name}*" number:{number}'
         if set_ids:
             query += " (" + " OR ".join(f"set.id:{sid}" for sid in set_ids) + ")"
-        data = _get("cards", {"q": query, "select": "id,name,number,rarity,set", "pageSize": 20})
+        data = _get("cards", {"q": query, "select": "id,name,number,rarity,set,images,tcgplayer,cardmarket",
+                                "pageSize": 20})
         cards = (data or {}).get("data") or []
         if set_ids:
             cards = [c for c in cards if c["set"]["id"] in set_ids] or cards

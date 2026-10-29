@@ -48,7 +48,8 @@ def collection():
 
 @pages.get("/cards/new")
 def new_card():
-    return _form()
+    # Vindo do Scan, os dados reconhecidos chegam na URL e só preenchem o formulário (nada é salvo aqui).
+    return _form(values=card_service.form_defaults(prefill=request.args.to_dict()) if request.args else None)
 
 
 @pages.post("/cards/new")

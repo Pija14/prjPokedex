@@ -10,7 +10,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from database import init_db
-from routes import api, auth, grading, pages
+from routes import api, auth, grading, pages, scan
 from services import auth_service, card_service, gemini_service, image_service
 
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
@@ -31,6 +31,7 @@ def create_app(config: type = Config, **overrides) -> Flask:
     app.register_blueprint(pages)
     app.register_blueprint(api)
     app.register_blueprint(grading)
+    app.register_blueprint(scan)
     _register_security(app)
     _register_template_helpers(app)
     _register_error_pages(app)
@@ -82,6 +83,16 @@ def brl(value) -> str:
     return f"R$ {int(whole):,}".replace(",", ".") + f",{cents}"
 
 
+CURRENCY_SYMBOLS = {"BRL": "R$", "USD": "US$", "EUR": "€"}
+
+
+def money(value, currency: str = "BRL") -> str:
+    """Valor em outra moeda no formato brasileiro: 954.65, 'USD' → 'US$ 954,65'."""
+    if value is None:
+        return "—"
+    return brl(value).replace("R$", CURRENCY_SYMBOLS.get(currency, currency), 1)
+
+
 def date_br(value) -> str:
     if value is None:
         return "—"
@@ -96,6 +107,7 @@ def date_br(value) -> str:
 def _register_template_helpers(app: Flask) -> None:
     app.add_template_filter(brl, "brl")
     app.add_template_filter(date_br, "date_br")
+    app.add_template_filter(money, "money")
     app.add_template_global(image_service.image_url, "image_url")
     app.add_template_global(card_service.rarity_tier, "rarity_tier")
     app.add_template_global(app.config["MAX_IMAGE_MB"], "max_image_mb")
@@ -121,6 +133,11 @@ def _register_error_pages(app: Flask) -> None:
             if card:
                 return render_template("grade_form.html", card=card, error=message, issues=[], tips=[],
                                        ai_enabled=gemini_service.is_configured()), 413
+        if request.endpoint == "scan.scan_submit":
+            if request.headers.get("X-Scan-Fragment") == "1":
+                return {"error": message}, 413
+            return render_template("scan.html", result=None, error=message,
+                                   ai_enabled=gemini_service.is_configured()), 413
         values = card_service.form_defaults()
         return render_template("card_form.html", card=None, values=values, errors={"image": message},
                                rarities=card_service.RARITY_SUGGESTIONS, languages=card_service.LANGUAGES,

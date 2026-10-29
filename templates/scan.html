@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="overline">Reconhecimento por IA</p>
+    <h1>Scan</h1>
+  </div>
+</header>
+
+{% if not ai_enabled %}
+<div class="ai-banner" role="note">
+  <span class="soon-chip">IA desligada</span>
+  <p><strong>Scan indisponível:</strong> defina <code>GEMINI_API_KEY</code> no arquivo <code>.env</code> do servidor.</p>
+</div>
+{% endif %}
+
+<section class="scan" data-scan data-state="{{ 'result' if result else 'capture' }}">
+  <div class="scan-stage">
+    <div class="scan-viewfinder" data-scan-viewfinder>
+      <video class="scan-video" data-scan-video playsinline muted hidden></video>
+      <img class="scan-still" data-scan-still alt="" hidden>
+      <div class="scan-placeholder" data-scan-placeholder>
+        {% include 'partials/_icon_scan.html' %}
+        <span>Tire uma foto da carta, de frente e com boa luz</span>
+      </div>
+      <div class="scan-frame" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="scan-beam"></span></div>
+      <p class="scan-hint" data-scan-hint hidden>Enquadre a carta inteira na moldura</p>
+    </div>
+
+    <div class="ai-status scan-status{% if error %} is-error{% endif %}" data-scan-status role="status" aria-live="polite"{% if not error %} hidden{% endif %}>
+      <span class="ai-icon" aria-hidden="true">{% include 'partials/_icon_sparkle.html' %}</span>
+      <p>{{ error or '' }}</p>
+    </div>
+
+    <form class="scan-controls" method="post" enctype="multipart/form-data" action="{{ url_for('scan.scan_submit') }}" data-scan-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="btn btn-tonal scan-pick">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        <span>Galeria</span>
+        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" data-scan-file>
+      </label>
+      <button class="scan-shutter" type="button" data-scan-shutter hidden aria-label="Escanear carta">
+        <span aria-hidden="true"></span>
+      </button>
+      <label class="btn btn-primary btn-lg scan-pick scan-camera" data-scan-native>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        <span>Tirar foto</span>
+        <input type="file" name="image" accept="image/*" capture="environment" data-scan-file>
+      </label>
+      <button class="btn btn-primary no-js-only" type="submit">Escanear</button>
+    </form>
+  </div>
+
+  <div class="scan-result" data-scan-result tabindex="-1">
+    {% if result %}{% include 'partials/_scan_result.html' %}{% endif %}
+  </div>
+</section>
+{% endblock %}

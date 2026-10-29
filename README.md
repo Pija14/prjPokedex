@@ -37,10 +37,12 @@ prjPokedex/
 │   ├── auth.py             # entrar / sair
 │   ├── pages.py            # páginas HTML (Home, Coleção, Adicionar, Detalhes, Editar, Excluir)
 │   ├── cards.py            # API REST JSON (/api/cards)
+│   ├── scan.py             # Scan: tela, vitrine e /api/scan (não grava nada)
 │   └── grading.py          # avaliação por IA: telas e API (/api/cards/<id>/grade)
 ├── services/
 │   ├── card_service.py     # regras de negócio: validação, preço, busca, filtros, resumo
-│   ├── image_service.py    # upload seguro das imagens
+│   ├── image_service.py    # upload seguro das imagens e realce da foto do Scan
+│   ├── price_service.py    # valor do Scan: referência internacional + link da Liga Pokémon
 │   ├── auth_service.py     # login (senha com hash), limite de tentativas, CSRF
 │   ├── gemini_service.py   # chamada ao Gemini (modelos de reserva, prazos) e identificação da carta
 │   ├── catalog_service.py  # confere coleção e raridade no catálogo público
@@ -57,7 +59,7 @@ prjPokedex/
 └── tests/                  # testes do serviço, da API, da IA e do login
 ```
 
-**Camadas:** as rotas só recebem a requisição e devolvem a resposta; as regras ficam em `services/`; o acesso a dados em `database/`. As páginas HTML e a API REST chamam os **mesmos** serviços — e os próximos (`gemini_service`, `price_service`, `collection_service`) entram na mesma camada.
+**Camadas:** as rotas só recebem a requisição e devolvem a resposta; as regras ficam em `services/`; o acesso a dados em `database/`. As páginas HTML e a API REST chamam os **mesmos** serviços — e os próximos (como `collection_service`) entram na mesma camada.
 
 ## Como instalar e executar
 
@@ -120,6 +122,7 @@ pytest
 
 ## Funcionalidades atuais
 
+- **Scan** (menu próprio): aponte a câmera para a carta (ou escolha uma foto) e veja na hora uma vitrine com a foto realçada (ou a imagem oficial), nome, coleção, raridade e valor de referência, com atalho para a Liga Pokémon e para cadastrar. **Não grava nada.** Detalhes em [Scan](#scan-consulta-rápida-sem-salvar).
 - **Home** com resumo da coleção (cards cadastrados, valor total, número de coleções e últimos adicionados).
 - **Reconhecimento pela foto (Gemini):** ao escolher a foto em "Adicionar Card", a IA identifica nome, coleção, número, raridade e idioma (e mostra HP, tipo, estágio, edição, ilustrador, código do set e ano). Os campos preenchidos pela IA ficam marcados com **IA**; o que você já digitou não é sobrescrito; você revisa, informa o valor e salva. Na edição, "Identificar com IA" completa só os campos vazios.
 - **Adicionar Card** manual: nome do Pokémon, coleção, número, raridade, idioma, valor, data e fonte do valor, imagem.
@@ -133,6 +136,7 @@ pytest
   |---|---|---|
   | GET | `/api/cards?q=&collection=&rarity=` | lista (com filtros opcionais) |
   | GET | `/api/cards/<id>` | uma carta |
+  | POST | `/api/scan` | scan completo da foto (`image`, multipart): carta, foto realçada (data URI), imagem oficial e valor de referência — não salva nada |
   | POST | `/api/cards/identify` | reconhece a carta da foto (`image`, multipart) e devolve os dados — não salva nada |
   | POST | `/api/cards` | cria (JSON ou `multipart/form-data` com `image`) |
   | PUT | `/api/cards/<id>` | altera só os campos enviados (JSON ou multipart; `remove_image=1` remove a imagem) |
@@ -165,6 +169,19 @@ foto → (app reduz para 1600 px só para a análise) → POST /api/cards/identi
 - **Plano gratuito:** cada modelo do Gemini tem um limite diário (cerca de 20 pedidos por modelo). O CardDex tenta vários modelos em sequência (`GEMINI_FALLBACK_MODELS`); quando todos esgotam, avisa e você preenche manualmente.
 - Respostas típicas em 3 a 7 segundos. Foto que não é uma carta → mensagem clara, sem preencher nada.
 - A IA lê o que está impresso; edição/variante (ex.: 1ª Edição) só quando o selo aparece na foto. **Sempre confira** antes de salvar.
+
+## Scan (consulta rápida, sem salvar)
+
+```text
+câmera ao vivo (ou foto) → POST /scan → Gemini identifica + devolve a posição da carta na foto
+     → catálogo confere coleção/raridade e traz a imagem oficial e os preços internacionais
+     → Pillow recorta e realça a foto (só em memória) → vitrine na tela
+```
+
+- **Nada é gravado:** nem no banco, nem em `static/images/cards/`. "Cadastrar na coleção" só abre o formulário já preenchido.
+- **Câmera ao vivo** exige HTTPS ou `localhost`. Pelo IP da rede local (`http://192.168...`) o navegador do celular não libera a câmera na página: o botão **Tirar foto** abre a câmera nativa, com o mesmo resultado.
+- **Valor:** a **Liga Pokémon** não tem API e bloqueia acesso automatizado (Cloudflare), então o CardDex **não lê** os preços dela: o botão **Ver na Liga Pokémon (R$)** abre a busca da carta no seu navegador. O valor exibido é a **referência internacional** do catálogo (TCGplayer em US$, Cardmarket em €), sempre identificado como tal.
+- Cartas japonesas, coreanas e chinesas não estão no catálogo internacional: aparecem sem imagem oficial e sem valor de referência, só com o link da Liga.
 
 ## Avaliação da condição por IA (estimativa de faixa PSA)
 
@@ -212,7 +229,8 @@ Consulta automática de preço, histórico de preços, dashboard da coleção, w
 [x] Integração Gemini
 [x] Reconhecimento automático do card
 [x] Avaliação da condição por IA (estimativa de faixa PSA)
-[ ] Consulta automática de preço
+[x] Scan: reconhecimento + valor de referência (sem salvar)
+[ ] Consulta automática de preço em R$ (Liga Pokémon não tem API)
 [ ] Histórico de preços
 [ ] Dashboard da coleção
 [ ] Wishlist

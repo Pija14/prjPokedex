@@ -419,6 +419,181 @@
     });
   }
 
+  // ---------- Scan: câmera ao vivo → IA → vitrine (nada é salvo) ----------
+  const scanBox = document.querySelector("[data-scan]");
+  if (scanBox) {
+    const scanForm = scanBox.querySelector("[data-scan-form]");
+    const video = scanBox.querySelector("[data-scan-video]");
+    const still = scanBox.querySelector("[data-scan-still]");
+    const placeholder = scanBox.querySelector("[data-scan-placeholder]");
+    const hint = scanBox.querySelector("[data-scan-hint]");
+    const shutter = scanBox.querySelector("[data-scan-shutter]");
+    const nativeCamera = scanBox.querySelector("[data-scan-native]");
+    const status = scanBox.querySelector("[data-scan-status]");
+    const resultBox = scanBox.querySelector("[data-scan-result]");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const SPINNER = '<span class="ai-spinner" aria-hidden="true"></span> ';
+    let stream = null, busy = false, stillUrl = null;
+
+    const setStatus = (kind, html = "") => {
+      status.hidden = !kind;
+      if (kind) status.className = `ai-status scan-status is-${kind}`;
+      status.querySelector("p").innerHTML = html;
+    };
+    const showStill = (blob) => {
+      if (stillUrl) URL.revokeObjectURL(stillUrl);
+      stillUrl = blob ? URL.createObjectURL(blob) : null;
+      still.hidden = !blob;
+      if (blob) still.src = stillUrl; else still.removeAttribute("src");
+      placeholder.hidden = Boolean(blob);
+    };
+
+    const stopCamera = () => {
+      stream?.getTracks().forEach((track) => track.stop());
+      stream = null;
+      video.srcObject = null;
+      video.hidden = true;
+      hint.hidden = true;
+      shutter.hidden = true;
+      nativeCamera.hidden = false;
+      scanBox.classList.remove("is-live");
+    };
+    // Câmera ao vivo só com permissão e em HTTPS/localhost; senão fica o botão "Tirar foto" (câmera nativa).
+    const startCamera = async () => {
+      if (stream || !navigator.mediaDevices?.getUserMedia || scanBox.dataset.state !== "capture" || document.hidden) return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1440 } },
+        });
+      } catch {
+        stream = null;
+        return;
+      }
+      if (scanBox.dataset.state !== "capture" || document.hidden) { stopCamera(); return; }
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      video.hidden = false;
+      showStill(null);
+      placeholder.hidden = true;
+      hint.hidden = false;
+      shutter.hidden = false;
+      nativeCamera.hidden = true;
+      scanBox.classList.add("is-live");
+    };
+    const grabFrame = () => new Promise((resolve) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      canvas.toBlob(resolve, "image/jpeg", 0.92);
+    });
+
+    // Vitrine: alternar "Sua foto / Oficial" e inclinar a carta seguindo o dedo/mouse.
+    const initShowcase = (root) => {
+      const card = root.querySelector("[data-tilt]");
+      if (!card) return;
+      const buttons = [...root.querySelectorAll("[data-view-btn]")];
+      buttons.forEach((button) => button.addEventListener("click", () => {
+        buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        card.querySelectorAll("[data-view]").forEach((img) => { img.hidden = img.dataset.view !== button.dataset.viewBtn; });
+      }));
+      card.querySelector('[data-view="official"]')?.addEventListener("error", (event) => {
+        event.target.remove(); // imagem oficial fora do ar: fica só a foto
+        root.querySelector(".segmented")?.remove();
+        card.querySelector('[data-view="photo"]').hidden = false;
+      });
+      if (reduceMotion.matches) return;
+      const tilt = (event) => {
+        const box = card.getBoundingClientRect();
+        const x = (event.clientX - box.left) / box.width;
+        const y = (event.clientY - box.top) / box.height;
+        if (x < 0 || x > 1 || y < 0 || y > 1) return;
+        card.classList.add("is-tilting");
+        card.style.setProperty("--ry", `${((x - 0.5) * 18).toFixed(2)}deg`);
+        card.style.setProperty("--rx", `${((0.5 - y) * 18).toFixed(2)}deg`);
+        card.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+        card.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+      };
+      const settle = () => {
+        card.classList.remove("is-tilting");
+        ["--rx", "--ry", "--mx", "--my"].forEach((name) => card.style.removeProperty(name));
+      };
+      card.addEventListener("pointermove", tilt);
+      ["pointerleave", "pointerup", "pointercancel"].forEach((name) => card.addEventListener(name, settle));
+    };
+
+    const analyze = async (blob) => {
+      if (busy || !blob) return;
+      busy = true;
+      stopCamera();
+      showStill(blob);
+      scanBox.dataset.state = "analyzing";
+      setStatus("loading", `${SPINNER}Reconhecendo a carta…`);
+      const slow = setTimeout(() => setStatus("loading", `${SPINNER}Conferindo coleção, raridade e valor…`), 5000);
+      try {
+        const body = new FormData();
+        body.append("image", await shrinkImage(blob, 1600, 0.9), "carta.jpg");
+        const response = await fetch(scanForm.action, {
+          method: "POST", body, headers: { "X-CSRF-Token": csrfToken(), "X-Scan-Fragment": "1" },
+        });
+        if (response.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || data.errors?.image || "Não foi possível reconhecer a carta.");
+        }
+        resultBox.innerHTML = await response.text();
+        scanBox.dataset.state = "result";
+        setStatus(null);
+        initShowcase(resultBox);
+        window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
+        resultBox.focus({ preventScroll: true });
+      } catch (error) {
+        const message = error instanceof TypeError ? "Sem conexão com o servidor." : error.message;
+        scanBox.dataset.state = "capture";
+        setStatus("error", `${escapeHtml(message || "Falha no scan.")}<br>Tente de novo: carta inteira na moldura, de frente, com boa luz e sem reflexo.`);
+        startCamera();
+      } finally {
+        clearTimeout(slow);
+        busy = false;
+      }
+    };
+
+    const restart = () => {
+      resultBox.innerHTML = "";
+      scanBox.dataset.state = "capture";
+      showStill(null);
+      setStatus(null);
+      window.scrollTo({ top: 0, behavior: "auto" });
+      startCamera();
+    };
+
+    shutter.addEventListener("click", async () => {
+      if (video.videoWidth) analyze(await grabFrame());
+    });
+    scanBox.querySelectorAll("[data-scan-file]").forEach((input) => input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      input.value = "";
+      if (!file) return;
+      if (file.type && !file.type.startsWith("image/")) {
+        setStatus("error", "Escolha uma imagem (JPG, PNG ou WEBP).");
+        return;
+      }
+      analyze(file); // a foto é reduzida antes do envio; o servidor valida formato e tamanho
+    }));
+    scanForm.addEventListener("submit", (event) => event.preventDefault()); // com JS o envio é pelo fetch
+    resultBox.addEventListener("click", (event) => {
+      if (!event.target.closest("[data-scan-again]")) return;
+      event.preventDefault();
+      restart();
+    });
+    document.addEventListener("visibilitychange", () => (document.hidden ? stopCamera() : startCamera()));
+    window.addEventListener("pagehide", stopCamera);
+
+    if (scanBox.dataset.state === "result") initShowcase(resultBox);
+    else startCamera();
+  }
+
   // ---------- Confirmação de exclusão ----------
   const dialog = document.querySelector("[data-confirm-dialog]");
   document.querySelectorAll("form[data-confirm]").forEach((target) => {
