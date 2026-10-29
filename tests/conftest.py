@@ -7,7 +7,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app  # noqa: E402
-from services import catalog_service, price_service  # noqa: E402
+from services import catalog_service, myp_service, price_service  # noqa: E402
 
 # Menores arquivos válidos de cada formato (só a assinatura importa para a validação).
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
@@ -25,6 +25,9 @@ def catalog_offline(monkeypatch):
     monkeypatch.setattr(price_service, "_fetch_rates", lambda: None)
     monkeypatch.setitem(price_service._rates_cache, "rates", None)
     monkeypatch.setitem(price_service._rates_cache, "loaded_at", 0.0)
+    # MYP Cards fora do ar por padrão (nenhum teste acessa o site); test_myp simula as páginas.
+    monkeypatch.setattr(myp_service, "_get", lambda path, params=None, deadline=None: None)
+    monkeypatch.setattr(myp_service, "_cache", {})
 
 
 @pytest.fixture()

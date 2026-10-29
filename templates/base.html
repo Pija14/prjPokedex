@@ -8,7 +8,7 @@
   <script>document.documentElement.classList.add("js")</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=13">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=14">
 </head>
 <body class="{% block body_class %}{% endblock %}{% if logged_in() and request.endpoint not in ('auth.login', 'auth.login_post') %} has-nav{% endif %}">
   {% set nav = [
@@ -51,7 +51,7 @@
     </nav>
     <div class="sidebar-foot">
       <span class="soon-chip">Novo</span>
-      <p>Scan: aponte a câmera para a carta e veja coleção, raridade e valor em reais na hora.</p>
+      <p>Scan: aponte a câmera para a carta e veja coleção, raridade e o preço na MYP Cards na hora.</p>
     </div>
     {% if auth_enabled() %}
       <form method="post" action="{{ url_for('auth.logout') }}">

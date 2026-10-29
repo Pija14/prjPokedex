@@ -42,7 +42,8 @@ prjPokedex/
 ├── services/
 │   ├── card_service.py     # regras de negócio: validação, preço, busca, filtros, resumo
 │   ├── image_service.py    # upload seguro das imagens
-│   ├── price_service.py    # valor do Scan em R$ (referência internacional × cotação) + link da Liga
+│   ├── price_service.py    # valor do Scan em R$: MYP Cards, senão referência internacional × cotação
+│   ├── myp_service.py      # leitura do preço na MYP Cards (busca + página da carta)
 │   ├── auth_service.py     # login (senha com hash), limite de tentativas, CSRF
 │   ├── gemini_service.py   # chamada ao Gemini (modelos de reserva, prazos) e identificação da carta
 │   ├── catalog_service.py  # confere coleção e raridade no catálogo público
@@ -122,7 +123,7 @@ pytest
 
 ## Funcionalidades atuais
 
-- **Scan** (menu próprio): aponte a câmera para a carta (ou escolha uma foto) e veja na hora uma vitrine com a imagem oficial da carta, nome, coleção, raridade e valor de referência em R$, com atalho para a Liga Pokémon e para cadastrar. **Não grava nada.** Detalhes em [Scan](#scan-consulta-rápida-sem-salvar).
+- **Scan** (menu próprio): aponte a câmera para a carta (ou escolha uma foto) e veja na hora uma vitrine com a imagem oficial da carta, nome, coleção, raridade e o preço no Brasil pela **MYP Cards** (médio, menor e último vendido), com atalho para as ofertas e para cadastrar. **Não grava nada.** Detalhes em [Scan](#scan-consulta-rápida-sem-salvar).
 - **Home** com resumo da coleção (cards cadastrados, valor total, número de coleções e últimos adicionados).
 - **Reconhecimento pela foto (Gemini):** ao escolher a foto em "Adicionar Card", a IA identifica nome, coleção, número, raridade e idioma (e mostra HP, tipo, estágio, edição, ilustrador, código do set e ano). Os campos preenchidos pela IA ficam marcados com **IA**; o que você já digitou não é sobrescrito; você revisa, informa o valor e salva. Na edição, "Identificar com IA" completa só os campos vazios.
 - **Adicionar Card** manual: nome do Pokémon, coleção, número, raridade, idioma, valor, data e fonte do valor, imagem.
@@ -136,7 +137,7 @@ pytest
   |---|---|---|
   | GET | `/api/cards?q=&collection=&rarity=` | lista (com filtros opcionais) |
   | GET | `/api/cards/<id>` | uma carta |
-  | POST | `/api/scan` | scan completo da foto (`image`, multipart): carta, imagem oficial e valor de referência em R$ — não salva nada |
+  | POST | `/api/scan` | scan completo da foto (`image`, multipart): carta, imagem oficial e preço em R$ (MYP Cards ou referência) — não salva nada |
   | POST | `/api/cards/identify` | reconhece a carta da foto (`image`, multipart) e devolve os dados — não salva nada |
   | POST | `/api/cards` | cria (JSON ou `multipart/form-data` com `image`) |
   | PUT | `/api/cards/<id>` | altera só os campos enviados (JSON ou multipart; `remove_image=1` remove a imagem) |
@@ -175,12 +176,14 @@ foto → (app reduz para 1600 px só para a análise) → POST /api/cards/identi
 ```text
 câmera ao vivo (ou foto) → POST /scan → Gemini identifica a carta
      → catálogo confere coleção/raridade e traz a imagem oficial e os preços internacionais
-     → preços convertidos para R$ pela cotação do dia → vitrine na tela
+     → preço na MYP Cards (ou referência internacional convertida para R$) → vitrine na tela
 ```
 
 - **Nada é gravado:** nem no banco, nem em `static/images/cards/`. A foto só serve para o reconhecimento; na tela aparece a imagem oficial. "Cadastrar na coleção" só abre o formulário já preenchido.
 - **Câmera ao vivo** exige HTTPS ou `localhost`. Pelo IP da rede local (`http://192.168...`) o navegador do celular não libera a câmera na página: o botão **Tirar foto** abre a câmera nativa, com o mesmo resultado.
-- **Valor:** a **Liga Pokémon** não tem API e bloqueia acesso automatizado (Cloudflare), então o CardDex **não lê** os preços dela: o botão **Ver na Liga Pokémon (R$)** abre a busca da carta no seu navegador. O valor exibido é a **referência internacional** do catálogo (TCGplayer e Cardmarket) **convertida para R$** pela cotação do dia (AwesomeAPI, guardada por 6 h). Sem cotação, a tela mostra "Sem preço" — nunca valores em US$ ou €.
+- **Valor (sempre em R$):**
+  1. **MYP Cards** (marketplace brasileiro): preço médio dos anúncios, menor preço e último vendido, com o botão **Ver ofertas na MYP Cards**. A MYP não tem API: o CardDex lê a busca e a página da carta (permitidas pelo `robots.txt` do site), identificando-se como `CardDex/1.0`, com cache de 30 min. A carta certa é escolhida pelo número impresso (`071/084`) e pelo código da coleção (`PBL`, `MEW`...); reimpressões com o mesmo número não são confundidas, e na dúvida o CardDex não mostra preço em vez de chutar. Se o site mudar o layout, cai no passo 2.
+  2. Não achou na MYP: **referência internacional** do catálogo (TCGplayer/Cardmarket) **convertida para R$** pela cotação do dia (AwesomeAPI; reserva: Frankfurter/BCE), com o botão **Ver na Liga Pokémon (R$)**. A Liga não tem API e bloqueia acesso automatizado.
 - Cartas japonesas, coreanas e chinesas não estão no catálogo internacional: aparecem sem imagem oficial e sem valor de referência, só com o link da Liga.
 
 ## Avaliação da condição por IA (estimativa de faixa PSA)
@@ -229,8 +232,7 @@ Consulta automática de preço, histórico de preços, dashboard da coleção, w
 [x] Integração Gemini
 [x] Reconhecimento automático do card
 [x] Avaliação da condição por IA (estimativa de faixa PSA)
-[x] Scan: reconhecimento + valor de referência (sem salvar)
-[ ] Consulta automática de preço em R$ (Liga Pokémon não tem API)
+[x] Scan: reconhecimento + preço em R$ pela MYP Cards (sem salvar)
 [ ] Histórico de preços
 [ ] Dashboard da coleção
 [ ] Wishlist

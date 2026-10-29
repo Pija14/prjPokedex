@@ -163,7 +163,7 @@ def test_cotacao_le_awesomeapi_e_guarda_em_cache(monkeypatch):
     monkeypatch.undo()  # volta o _fetch_rates real, com a rede simulada abaixo
     hits = []
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, timeout=None, headers=None):
         hits.append(url)
         return FakeResponse(200, {"USDBRL": {"bid": "5.3462", "create_date": "2026-10-29 05:25:56"},
                                   "EURBRL": {"bid": "5.9591"}})
@@ -175,10 +175,23 @@ def test_cotacao_le_awesomeapi_e_guarda_em_cache(monkeypatch):
     assert len(hits) == 1  # segunda vez veio do cache
 
 
+def test_cotacao_usa_reserva_quando_awesomeapi_falha(monkeypatch):
+    monkeypatch.undo()
+
+    def fake_get(url, timeout=None, headers=None):
+        if "awesomeapi" in url:
+            return FakeResponse(429, {})
+        return FakeResponse(200, {"date": "2026-10-28", "rates": {"USD": 0.2, "EUR": 0.16}})
+
+    monkeypatch.setattr(price_service.requests, "get", fake_get)
+    monkeypatch.setitem(price_service._rates_cache, "rates", None)
+    assert price_service.rates() == {"USD": 5.0, "EUR": 6.25, "date": "28/10/2026"}
+
+
 def test_cotacao_fora_do_ar(monkeypatch):
     monkeypatch.undo()
 
-    def fail(url, timeout=None):
+    def fail(url, timeout=None, headers=None):
         raise requests.ConnectionError
 
     monkeypatch.setattr(price_service.requests, "get", fail)
